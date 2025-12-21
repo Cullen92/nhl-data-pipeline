@@ -1,0 +1,8 @@
+requests
+ruff
+pytest
+boto3
+pyspark
+pydantic
+python-dotenv
+mypy
