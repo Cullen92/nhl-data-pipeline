@@ -6,3 +6,4 @@ pyspark
 pydantic
 python-dotenv
 mypy
+pyyaml
