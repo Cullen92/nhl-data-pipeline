@@ -1,0 +1,9 @@
+aws:
+  region: "us-east-2"
+
+s3:
+  bucket: "nhl-data-pipeline-cullenm-dev"
+
+paths:
+  raw_prefix: "raw/nhl"
+  curated_prefix: "curated/nhl"

@@ -1,0 +1,3 @@
+# Local settings (developer-specific)
+config/settings.yml
+.venv/
