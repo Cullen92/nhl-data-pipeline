@@ -2,11 +2,11 @@ import requests
 import logging
 from requests.exceptions import HTTPError, RequestException
 
-def make_api_call(url, headers=None, retries=3):
+def make_api_call(url, headers=None, retries=3, timeout=30):
     """Make a resilient API call with retry logic."""
     for attempt in range(retries):
         try:
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, timeout=timeout)
             response.raise_for_status()
             return response
         except (HTTPError, RequestException) as e:
