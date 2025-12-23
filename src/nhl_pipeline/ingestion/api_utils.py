@@ -12,4 +12,4 @@ def make_api_call(url, headers=None, retries=3):
         except (HTTPError, RequestException) as e:
             logging.warning(f"Attempt {attempt+1} failed: {e}")
             if attempt == retries - 1:
-                raise
+                raise type(e)(f"Failed to fetch {url} after {retries} attempts: {e}") from e
