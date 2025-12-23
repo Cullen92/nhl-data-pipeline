@@ -8,6 +8,8 @@ from typing import Any
 
 import yaml
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -41,7 +43,7 @@ def _get_airflow_variable(key: str) -> str | None:
     except Exception as e:
         # Catch all exceptions (DB unreachable, connection issues, SQLAlchemy errors, etc.)
         # We log the exception details to aid debugging while gracefully degrading
-        logging.warning(f"Unable to retrieve Airflow variable '{key}': {type(e).__name__}: {e}")
+        logger.warning(f"Unable to retrieve Airflow variable '{key}': {type(e).__name__}: {e}")
         return None
 
 
