@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -37,8 +38,9 @@ def _get_airflow_variable(key: str) -> str | None:
     except ImportError:
         # Airflow not installed (e.g. local dev without airflow)
         return None
-    except Exception:
-        # DB unreachable or other issues
+    except (OSError, RuntimeError) as e:
+        # DB unreachable, connection issues, or other runtime errors
+        logging.warning(f"Unable to retrieve Airflow variable '{key}': {e}")
         return None
 
 
