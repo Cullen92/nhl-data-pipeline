@@ -15,7 +15,7 @@ default_args = {
 }
 
 with DAG(
-    "nhl_raw_schedule_hourly",
+    dag_id="nhl_raw_schedule_hourly",
     default_args=default_args,
     description="Fetch NHL schedule and write to S3 (hourly)",
     schedule="0 * * * *",  # hourly trigger
