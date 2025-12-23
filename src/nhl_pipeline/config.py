@@ -59,24 +59,23 @@ def get_settings() -> Settings:
     # MWAA forces env vars to be lowercase (e.g. env.var.s3_bucket -> s3_bucket)
     # So we check both UPPERCASE (local/standard) and lowercase (MWAA)
     aws_region = (
-        os.getenv("AWS_REGION") 
+        os.getenv("AWS_REGION")
         or os.getenv("aws_region")
-        or _get_airflow_variable("AWS_REGION") 
+        or _get_airflow_variable("AWS_REGION")
         or data.get("aws", {}).get("region")
     )
     s3_bucket = (
-        os.getenv("S3_BUCKET") 
+        os.getenv("S3_BUCKET")
         or os.getenv("s3_bucket")
-        or _get_airflow_variable("S3_BUCKET") 
+        or _get_airflow_variable("S3_BUCKET")
         or data.get("s3", {}).get("bucket")
     )
     mwaa_bucket = (
-        os.getenv("MWAA_BUCKET") 
+        os.getenv("MWAA_BUCKET")
         or os.getenv("mwaa_bucket")
-        or _get_airflow_variable("MWAA_BUCKET") 
+        or _get_airflow_variable("MWAA_BUCKET")
         or data.get("s3", {}).get("mwaa_bucket")
     )
-    
     raw_prefix = os.getenv("S3_RAW_PREFIX") or data.get("paths", {}).get("raw_prefix", "raw/nhl")
     curated_prefix = os.getenv("S3_CURATED_PREFIX") or data.get("paths", {}).get("curated_prefix", "curated/nhl")
 
