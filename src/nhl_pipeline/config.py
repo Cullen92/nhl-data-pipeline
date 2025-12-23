@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -37,8 +40,10 @@ def _get_airflow_variable(key: str) -> str | None:
     except ImportError:
         # Airflow not installed (e.g. local dev without airflow)
         return None
-    except Exception:
-        # DB unreachable or other issues
+    except Exception as e:
+        # Catch all exceptions (DB unreachable, connection issues, SQLAlchemy errors, etc.)
+        # We log the exception details to aid debugging while gracefully degrading
+        logger.warning(f"Unable to retrieve Airflow variable '{key}': {type(e).__name__}: {e}")
         return None
 
 
