@@ -28,6 +28,20 @@ def _load_yaml(path: Path) -> dict[str, Any]:
     return data
 
 
+def _get_airflow_variable(key: str) -> str | None:
+    """Try to retrieve a variable from Airflow's metadata database."""
+    try:
+        from airflow.models import Variable
+        # default_var=None prevents KeyError if variable is missing
+        return Variable.get(key, default_var=None)
+    except ImportError:
+        # Airflow not installed (e.g. local dev without airflow)
+        return None
+    except Exception:
+        # DB unreachable or other issues
+        return None
+
+
 def get_settings() -> Settings:
     """
     Load settings from config/settings.yml, with environment variable overrides.
@@ -42,9 +56,27 @@ def get_settings() -> Settings:
     # Try to find config relative to CWD or project root
     data = _load_yaml(Path("config/settings.yml"))
 
-    aws_region = os.getenv("AWS_REGION") or data.get("aws", {}).get("region")
-    s3_bucket = os.getenv("S3_BUCKET") or data.get("s3", {}).get("bucket")
-    mwaa_bucket = os.getenv("MWAA_BUCKET") or data.get("s3", {}).get("mwaa_bucket")
+    # MWAA forces env vars to be lowercase (e.g. env.var.s3_bucket -> s3_bucket)
+    # So we check both UPPERCASE (local/standard) and lowercase (MWAA)
+    aws_region = (
+        os.getenv("AWS_REGION") 
+        or os.getenv("aws_region")
+        or _get_airflow_variable("AWS_REGION") 
+        or data.get("aws", {}).get("region")
+    )
+    s3_bucket = (
+        os.getenv("S3_BUCKET") 
+        or os.getenv("s3_bucket")
+        or _get_airflow_variable("S3_BUCKET") 
+        or data.get("s3", {}).get("bucket")
+    )
+    mwaa_bucket = (
+        os.getenv("MWAA_BUCKET") 
+        or os.getenv("mwaa_bucket")
+        or _get_airflow_variable("MWAA_BUCKET") 
+        or data.get("s3", {}).get("mwaa_bucket")
+    )
+    
     raw_prefix = os.getenv("S3_RAW_PREFIX") or data.get("paths", {}).get("raw_prefix", "raw/nhl")
     curated_prefix = os.getenv("S3_CURATED_PREFIX") or data.get("paths", {}).get("curated_prefix", "curated/nhl")
 

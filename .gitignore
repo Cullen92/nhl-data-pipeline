@@ -6,3 +6,4 @@ config/settings.yml
 *.egg-info/
 __pycache__/
 .vscode/
+plugins.zip

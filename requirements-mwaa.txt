@@ -1,0 +1,6 @@
+requests
+boto3
+pydantic
+python-dotenv
+pyyaml
+# pyspark

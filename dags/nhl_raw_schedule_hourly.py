@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from airflow.models import DAG 
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.providers.standard.hooks.subprocess import SubprocessHook
-from nhl_pipeline.ingestion.fetch_schedule import fetch_schedule
+from nhl_pipeline.ingestion.fetch_schedule import fetch_schedule, upload_snapshot_to_s3
 
 # DAG default arguments
 default_args = {
@@ -22,13 +22,14 @@ dag = DAG(
     schedule="0 * * * *",  # hourly trigger
 )
 
-def run_script():
-    hook = SubprocessHook()  # Create an instance of SubprocessHook
-    command = ["python3", "-m", "nhl_pipeline.ingestion.fetch_schedule"]
-    hook.run_command(command)  # Use the `run_command` method to run an external script
+def ingest_schedule():
+    """Fetch schedule and upload to S3."""
+    snapshot = fetch_schedule()
+    uri = upload_snapshot_to_s3(snapshot)
+    print(f"Successfully uploaded schedule to {uri}")
 
 task_fetch_schedule = PythonOperator(
     task_id="fetch_schedule",
-    python_callable=fetch_schedule,
+    python_callable=ingest_schedule,
     dag=dag,
 )
