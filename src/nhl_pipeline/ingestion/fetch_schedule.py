@@ -5,10 +5,10 @@ from datetime import datetime, timezone
 from typing import Any
 
 import boto3
-import requests
 
-from config.settings import get_settings
-from src.utils.paths import raw_schedule_key, utc_partition
+from nhl_pipeline.config import get_settings
+from nhl_pipeline.ingestion.api_utils import make_api_call
+from nhl_pipeline.utils.paths import raw_schedule_key, utc_partition
 
 NHL_API_URL = "https://api-web.nhle.com/v1/schedule/now"
 
@@ -16,8 +16,7 @@ NHL_API_URL = "https://api-web.nhle.com/v1/schedule/now"
 def fetch_schedule(url: str = NHL_API_URL, timeout_s: int = 30) -> dict[str, Any]:
     extracted_at = datetime.now(timezone.utc).isoformat()
 
-    resp = requests.get(url, timeout=timeout_s)
-    resp.raise_for_status()
+    resp = make_api_call(url, timeout=timeout_s)
     payload = resp.json()
 
     # Raw wrapper: preserves lineage + makes snapshots auditable

@@ -1,3 +1,9 @@
 # Local settings (developer-specific)
 config/settings.yml
 .venv/
+
+# Build artifacts
+*.egg-info/
+__pycache__/
+.vscode/
+plugins.zip
