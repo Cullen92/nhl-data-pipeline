@@ -1,5 +1,4 @@
 from nhl_pipeline.config import get_settings
-import os
 from dotenv import load_dotenv
 
 # Load .env file if present (simulating local dev)

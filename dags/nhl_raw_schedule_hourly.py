@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from airflow.models import DAG 
 from airflow.providers.standard.operators.python import PythonOperator
-from airflow.providers.standard.hooks.subprocess import SubprocessHook
 from nhl_pipeline.ingestion.fetch_schedule import fetch_schedule, upload_snapshot_to_s3
 
 # DAG default arguments
