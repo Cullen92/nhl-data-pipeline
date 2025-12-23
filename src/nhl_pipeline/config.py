@@ -38,9 +38,10 @@ def _get_airflow_variable(key: str) -> str | None:
     except ImportError:
         # Airflow not installed (e.g. local dev without airflow)
         return None
-    except (OSError, RuntimeError) as e:
-        # DB unreachable, connection issues, or other runtime errors
-        logging.warning(f"Unable to retrieve Airflow variable '{key}': {e}")
+    except Exception as e:
+        # Catch all exceptions (DB unreachable, connection issues, SQLAlchemy errors, etc.)
+        # We log the exception details to aid debugging while gracefully degrading
+        logging.warning(f"Unable to retrieve Airflow variable '{key}': {type(e).__name__}: {e}")
         return None
 
 
