@@ -24,7 +24,7 @@ dag = DAG(
 
 def run_script():
     hook = SubprocessHook()  # Create an instance of SubprocessHook
-    command = ["python3", "-m", "src.ingestion.fetch_schedule"]
+    command = ["python3", "-m", "nhl_pipeline.ingestion.fetch_schedule"]
     hook.run_command(command)  # Use the `run_command` method to run an external script
 
 task_fetch_schedule = PythonOperator(
