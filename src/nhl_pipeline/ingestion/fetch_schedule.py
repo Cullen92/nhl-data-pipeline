@@ -7,8 +7,8 @@ from typing import Any
 import boto3
 import requests
 
-from config.settings import get_settings
-from src.utils.paths import raw_schedule_key, utc_partition
+from nhl_pipeline.config import get_settings
+from nhl_pipeline.utils.paths import raw_schedule_key, utc_partition
 
 NHL_API_URL = "https://api-web.nhle.com/v1/schedule/now"
 

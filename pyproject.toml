@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nhl_pipeline"
+version = "0.1.0"
+description = "NHL Data Pipeline Library"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "requests",
+    "boto3",
+    "pyyaml",
+    "pydantic",
+    "python-dotenv",
+    # Spark is often provided by the environment (e.g. EMR), but listing here for now
+    "pyspark", 
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+    "mypy",
+    # Airflow is provided by MWAA, so we list it as a dev dependency for local testing
+    "apache-airflow==3.0.6",
+    "airflow-providers-common-sql",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
