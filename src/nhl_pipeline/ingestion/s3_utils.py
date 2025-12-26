@@ -16,6 +16,12 @@ def s3_key_exists(*, bucket: str, key: str) -> bool:
         return True
     except ClientError as e:
         code = e.response.get("Error", {}).get("Code")
+        if code == "403":
+            raise PermissionError(
+                f"S3 HeadObject forbidden; cannot safely run missing-only backfill. "
+                f"Grant s3:GetObject on arn:aws:s3:::{bucket}/* (or broader) for the MWAA execution role. "
+                f"Failing key: s3://{bucket}/{key}"
+            ) from e
         if code in {"404", "NoSuchKey", "NotFound"}:
             return False
         raise
