@@ -9,7 +9,7 @@ class UtcPartition:
     date: str  # YYYY-MM-DD
     hour: str  # HH
 
-# Create a UtcPartiion instance with a given datetime, if not given, use utc now
+# Create a UtcPartition instance with a given datetime, if not given, use utc now
 # split the the hour and the date to member variables
 def utc_partition(dt: datetime | None = None) -> UtcPartition:
     dt = dt or datetime.now(timezone.utc)
