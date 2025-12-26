@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import time
 from datetime import datetime, timedelta, timezone
 
 from airflow.models import DAG
@@ -124,8 +125,6 @@ with DAG(
 				total_games += 1
 
 				if sleep_s > 0:
-					import time
-
 					time.sleep(sleep_s)
 
 			completed_at = datetime.now(timezone.utc).isoformat()
