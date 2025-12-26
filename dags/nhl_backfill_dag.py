@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import time
 from datetime import datetime, timedelta, timezone
 
 from airflow.models import DAG
@@ -149,3 +150,99 @@ with DAG(
         python_callable=backfill_gamecenter,
         op_kwargs={"partition_dt": "{{ ts }}"},
     )
+	def backfill_gamecenter(partition_dt: str):
+		settings = get_settings()
+
+		# Configure the date range (UTC dates). Defaults to season start -> today.
+		start_date = _env("NHL_BACKFILL_START_DATE", "2025-10-07")
+		end_date = _env("NHL_BACKFILL_END_DATE", datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+
+		start_dt = _parse_date_yyyy_mm_dd(start_date)
+		end_dt = _parse_date_yyyy_mm_dd(end_date)
+		if end_dt < start_dt:
+			raise ValueError("NHL_BACKFILL_END_DATE must be >= NHL_BACKFILL_START_DATE")
+
+		max_games_per_day = int(os.getenv("NHL_BACKFILL_MAX_GAMES_PER_DAY", "30"))
+		force = os.getenv("NHL_BACKFILL_FORCE", "false").strip().lower() in {"1", "true", "yes"}
+		skip_existing_game_files = (
+			os.getenv("NHL_BACKFILL_SKIP_EXISTING_GAME_FILES", "true").strip().lower() in {"1", "true", "yes"}
+		)
+		sleep_s = float(os.getenv("NHL_BACKFILL_SLEEP_S", "0"))
+
+		day = start_dt
+		total_games = 0
+		while day <= end_dt:
+			day_str = day.strftime("%Y-%m-%d")
+
+			success_key = raw_meta_backfill_gamecenter_success_key(day_str)
+			if not force and s3_key_exists(bucket=settings.s3_bucket, key=success_key):
+				print(f"{day_str}: _SUCCESS exists; skipping")
+				day += timedelta(days=1)
+				continue
+
+			url = f"https://api-web.nhle.com/v1/schedule/{day_str}"
+
+			schedule_snapshot = fetch_schedule(url=url)
+			payload = schedule_snapshot.get("payload")
+
+			game_ids = extract_game_ids(
+				payload,
+				partition_dt=day,
+				lookback_days=0,
+				only_final=True,
+				max_games=max_games_per_day,
+			)
+
+			print(f"{day_str}: found {len(game_ids)} FINAL games")
+
+			started_at = datetime.now(timezone.utc).isoformat()
+			for game_id in game_ids:
+				hour = "00"  # day is midnight UTC
+
+				box_key = raw_game_boxscore_key(day_str, hour, game_id)
+				pbp_key = raw_game_pbp_key(day_str, hour, game_id)
+
+				if skip_existing_game_files and s3_key_exists(bucket=settings.s3_bucket, key=box_key):
+					print(f"Skip existing boxscore: game_id={game_id}")
+				else:
+					box = fetch_game_boxscore(game_id)
+					box_uri = upload_game_boxscore_snapshot_to_s3(
+						box, game_id=game_id, partition_dt=day.isoformat()
+					)
+					print(f"Uploaded boxscore: game_id={game_id} -> {box_uri}")
+
+				if skip_existing_game_files and s3_key_exists(bucket=settings.s3_bucket, key=pbp_key):
+					print(f"Skip existing play-by-play: game_id={game_id}")
+				else:
+					pbp = fetch_game_play_by_play(game_id)
+					pbp_uri = upload_game_pbp_snapshot_to_s3(
+						pbp, game_id=game_id, partition_dt=day.isoformat()
+					)
+					print(f"Uploaded play-by-play: game_id={game_id} -> {pbp_uri}")
+
+				total_games += 1
+
+				if sleep_s > 0:
+					time.sleep(sleep_s)
+
+			completed_at = datetime.now(timezone.utc).isoformat()
+			marker = {
+				"pipeline": "nhl_backfill_gamecenter",
+				"date": day_str,
+				"games": len(game_ids),
+				"game_ids": game_ids,
+				"started_at": started_at,
+				"completed_at": completed_at,
+			}
+			marker_uri = put_json_to_s3(bucket=settings.s3_bucket, key=success_key, payload=marker)
+			print(f"{day_str}: wrote _SUCCESS marker -> {marker_uri}")
+
+			day += timedelta(days=1)
+
+		print(f"Backfill complete. Total games ingested: {total_games}")
+
+	task_backfill_gamecenter = PythonOperator(
+		task_id="backfill_gamecenter",
+		python_callable=backfill_gamecenter,
+		op_kwargs={"partition_dt": "{{ ts }}"},
+	)
