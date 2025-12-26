@@ -21,13 +21,14 @@ with DAG(
     schedule="0 * * * *",  # hourly trigger
 ) as dag:
 
-    def ingest_schedule():
+    def ingest_schedule(partition_dt: str):
         """Fetch schedule and upload to S3."""
         snapshot = fetch_schedule()
-        uri = upload_snapshot_to_s3(snapshot)
+        uri = upload_snapshot_to_s3(snapshot, partition_dt=partition_dt)
         print(f"Successfully uploaded schedule to {uri}")
 
     task_fetch_schedule = PythonOperator(
         task_id="fetch_schedule",
         python_callable=ingest_schedule,
+        op_kwargs={"partition_dt": "{{ ts }}"},
     )

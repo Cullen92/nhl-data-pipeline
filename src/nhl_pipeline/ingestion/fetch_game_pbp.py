@@ -8,23 +8,7 @@ import boto3
 
 from nhl_pipeline.config import get_settings
 from nhl_pipeline.ingestion.api_utils import make_api_call
-from nhl_pipeline.utils.paths import raw_schedule_key, utc_partition
-
-NHL_API_URL = "https://api-web.nhle.com/v1/schedule/now"
-
-
-def fetch_schedule(url: str = NHL_API_URL, timeout_s: int = 30) -> dict[str, Any]:
-    extracted_at = datetime.now(timezone.utc).isoformat()
-
-    resp = make_api_call(url, timeout=timeout_s)
-    payload = resp.json()
-
-    # Raw wrapper: preserves lineage + makes snapshots auditable
-    return {
-        "extracted_at": extracted_at,
-        "source_url": url,
-        "payload": payload,
-    }
+from nhl_pipeline.utils.paths import raw_game_pbp_key, utc_partition
 
 
 def _coerce_datetime(value: datetime | str | None) -> datetime | None:
@@ -33,7 +17,6 @@ def _coerce_datetime(value: datetime | str | None) -> datetime | None:
     if not isinstance(value, str):
         raise TypeError(f"partition_dt must be datetime | str | None, got {type(value)}")
 
-    # Airflow's {{ ts }} often renders like '2025-12-25T01:00:00+00:00' (or sometimes ends with 'Z').
     iso = value.strip().replace("Z", "+00:00")
     dt = datetime.fromisoformat(iso)
     if dt.tzinfo is None:
@@ -41,11 +24,30 @@ def _coerce_datetime(value: datetime | str | None) -> datetime | None:
     return dt
 
 
-def upload_snapshot_to_s3(snapshot: dict[str, Any], partition_dt: datetime | str | None = None) -> str:
+def fetch_game_play_by_play(game_id: int | str, timeout_s: int = 30) -> dict[str, Any]:
+    url = f"https://api-web.nhle.com/v1/gamecenter/{game_id}/play-by-play"
+    extracted_at = datetime.now(timezone.utc).isoformat()
+
+    resp = make_api_call(url, timeout=timeout_s)
+    payload = resp.json()
+
+    return {
+        "extracted_at": extracted_at,
+        "source_url": url,
+        "game_id": int(game_id),
+        "payload": payload,
+    }
+
+
+def upload_game_pbp_snapshot_to_s3(
+    snapshot: dict[str, Any],
+    game_id: int | str,
+    partition_dt: datetime | str | None = None,
+) -> str:
     settings = get_settings()
 
     part = utc_partition(_coerce_datetime(partition_dt))
-    key = raw_schedule_key(part.date, part.hour)
+    key = raw_game_pbp_key(part.date, part.hour, game_id=game_id)
 
     body = json.dumps(snapshot, ensure_ascii=False).encode("utf-8")
 
@@ -58,9 +60,3 @@ def upload_snapshot_to_s3(snapshot: dict[str, Any], partition_dt: datetime | str
     )
 
     return f"s3://{settings.s3_bucket}/{key}"
-
-
-if __name__ == "__main__":
-    snapshot = fetch_schedule()
-    uri = upload_snapshot_to_s3(snapshot)
-    print(f"Wrote raw schedule snapshot to: {uri}")
