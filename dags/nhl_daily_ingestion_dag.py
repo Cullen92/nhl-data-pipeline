@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import time
 from datetime import datetime, timedelta, timezone
 
 from airflow.models import DAG
@@ -35,6 +37,9 @@ with DAG(
 ) as dag:
 
     def ingest_daily(ts: str):
+        # Configure rate limiting (default 0.25 seconds between game fetches)
+        sleep_s = float(os.getenv("NHL_DAILY_SLEEP_S", "0.25"))
+        
         # 1. Fetch Schedule (schedule/now)
         # This typically returns the current week's schedule (e.g. Mon-Sun)
         schedule_snapshot = fetch_schedule()
@@ -76,6 +81,10 @@ with DAG(
                 pbp, game_id=game_id, partition_dt=ts
             )
             print(f"Uploaded pbp: {game_id} -> {pbp_uri}")
+            
+            # Rate limiting: sleep between game fetches to avoid overwhelming the API
+            if sleep_s > 0:
+                time.sleep(sleep_s)
 
     task_ingest_daily = PythonOperator(
         task_id="ingest_daily",
