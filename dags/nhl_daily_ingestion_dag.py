@@ -15,7 +15,6 @@ from nhl_pipeline.ingestion.fetch_game_pbp import (
 )
 from nhl_pipeline.ingestion.fetch_schedule import fetch_schedule, upload_snapshot_to_s3
 from nhl_pipeline.ingestion.gamecenter_selection import extract_game_ids
-from nhl_pipeline.config import get_settings
 
 default_args = {
     "owner": "airflow",
