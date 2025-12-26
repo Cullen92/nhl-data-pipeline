@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from airflow.models import DAG
 from airflow.providers.standard.operators.python import PythonOperator
@@ -15,6 +15,7 @@ from nhl_pipeline.ingestion.fetch_game_pbp import (
 )
 from nhl_pipeline.ingestion.fetch_schedule import fetch_schedule, upload_snapshot_to_s3
 from nhl_pipeline.ingestion.gamecenter_selection import extract_game_ids
+from nhl_pipeline.utils.datetime_utils import parse_airflow_ts
 
 default_args = {
     "owner": "airflow",
@@ -35,6 +36,9 @@ with DAG(
 ) as dag:
 
     def ingest_daily(ts: str):
+        # Configure rate limiting (default 0.25 seconds between game fetches)
+        sleep_s = float(os.getenv("NHL_DAILY_SLEEP_S", "0.25"))
+        
         # 1. Fetch Schedule (schedule/now)
         # This typically returns the current week's schedule (e.g. Mon-Sun)
         schedule_snapshot = fetch_schedule()
@@ -48,9 +52,7 @@ with DAG(
         payload = schedule_snapshot.get("payload")
         
         # Parse execution date
-        dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
+        dt = parse_airflow_ts(ts)
             
         game_ids = extract_game_ids(
             payload,
@@ -76,6 +78,10 @@ with DAG(
                 pbp, game_id=game_id, partition_dt=ts
             )
             print(f"Uploaded pbp: {game_id} -> {pbp_uri}")
+            
+            # Rate limiting: sleep between game fetches to avoid overwhelming the API
+            if sleep_s > 0:
+                time.sleep(sleep_s)
 
     task_ingest_daily = PythonOperator(
         task_id="ingest_daily",
