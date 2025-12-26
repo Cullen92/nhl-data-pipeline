@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-import os
 
 from airflow.models import DAG
 from airflow.providers.standard.operators.python import PythonOperator
