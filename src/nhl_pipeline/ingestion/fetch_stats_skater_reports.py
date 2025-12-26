@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 from urllib.parse import urlencode
 
@@ -9,6 +9,7 @@ import boto3
 
 from nhl_pipeline.config import get_settings
 from nhl_pipeline.ingestion.api_utils import make_api_call
+from nhl_pipeline.utils.datetime_utils import coerce_datetime, utc_now_iso
 from nhl_pipeline.utils.paths import (
     raw_stats_skater_powerplay_key,
     raw_stats_skater_summary_key,
@@ -17,19 +18,6 @@ from nhl_pipeline.utils.paths import (
 )
 
 _STATS_BASE = "https://api.nhle.com/stats/rest/en"
-
-
-def _coerce_datetime(value: datetime | str | None) -> datetime | None:
-    if value is None or isinstance(value, datetime):
-        return value
-    if not isinstance(value, str):
-        raise TypeError(f"partition_dt must be datetime | str | None, got {type(value)}")
-
-    iso = value.strip().replace("Z", "+00:00")
-    dt = datetime.fromisoformat(iso)
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt
 
 
 def _stats_url(path: str, params: dict[str, Any]) -> str:
@@ -44,7 +32,7 @@ def fetch_stats_skater_summary(
     limit: int = 1000,
     timeout_s: int = 30,
 ) -> dict[str, Any]:
-    extracted_at = datetime.now(timezone.utc).isoformat()
+    extracted_at = utc_now_iso()
 
     params = {
         "isAggregate": "false",
@@ -77,7 +65,7 @@ def fetch_stats_skater_timeonice(
     limit: int = 1000,
     timeout_s: int = 30,
 ) -> dict[str, Any]:
-    extracted_at = datetime.now(timezone.utc).isoformat()
+    extracted_at = utc_now_iso()
 
     params = {
         "isAggregate": "false",
@@ -110,7 +98,7 @@ def fetch_stats_skater_powerplay(
     limit: int = 1000,
     timeout_s: int = 30,
 ) -> dict[str, Any]:
-    extracted_at = datetime.now(timezone.utc).isoformat()
+    extracted_at = utc_now_iso()
 
     params = {
         "isAggregate": "false",
@@ -144,7 +132,7 @@ def upload_stats_skater_summary_snapshot_to_s3(
     partition_dt: datetime | str | None = None,
 ) -> str:
     settings = get_settings()
-    part = utc_partition(_coerce_datetime(partition_dt))
+    part = utc_partition(coerce_datetime(partition_dt))
     key = raw_stats_skater_summary_key(part.date, part.hour, season_id, game_type_id, start=start)
 
     body = json.dumps(snapshot, ensure_ascii=False).encode("utf-8")
@@ -162,7 +150,7 @@ def upload_stats_skater_timeonice_snapshot_to_s3(
     partition_dt: datetime | str | None = None,
 ) -> str:
     settings = get_settings()
-    part = utc_partition(_coerce_datetime(partition_dt))
+    part = utc_partition(coerce_datetime(partition_dt))
     key = raw_stats_skater_timeonice_key(part.date, part.hour, season_id, game_type_id, start=start)
 
     body = json.dumps(snapshot, ensure_ascii=False).encode("utf-8")
@@ -180,7 +168,7 @@ def upload_stats_skater_powerplay_snapshot_to_s3(
     partition_dt: datetime | str | None = None,
 ) -> str:
     settings = get_settings()
-    part = utc_partition(_coerce_datetime(partition_dt))
+    part = utc_partition(coerce_datetime(partition_dt))
     key = raw_stats_skater_powerplay_key(part.date, part.hour, season_id, game_type_id, start=start)
 
     body = json.dumps(snapshot, ensure_ascii=False).encode("utf-8")

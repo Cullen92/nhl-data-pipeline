@@ -1,31 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any
 
-
-def parse_airflow_ts(ts: str) -> datetime:
-    """Parse Airflow {{ ts }} into a timezone-aware UTC datetime."""
-    dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
+from nhl_pipeline.utils.datetime_utils import parse_airflow_ts, parse_utc_dt
 
 
 def partition_date_from_ts(ts: str) -> str:
     return parse_airflow_ts(ts).strftime("%Y-%m-%d")
-
-
-def _parse_utc_dt(value: str) -> datetime | None:
-    if not isinstance(value, str) or not value:
-        return None
-    try:
-        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
-        return None
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
 
 
 def iter_schedule_games(payload: Any) -> list[dict[str, Any]]:
@@ -77,7 +59,7 @@ def extract_game_ids(
         if not isinstance(game_id, int) or len(str(game_id)) != 10:
             continue
 
-        start_time_utc = _parse_utc_dt(game.get("startTimeUTC", ""))
+        start_time_utc = parse_utc_dt(game.get("startTimeUTC", ""))
         if start_time_utc is not None:
             if not (window_start <= start_time_utc < window_end):
                 continue

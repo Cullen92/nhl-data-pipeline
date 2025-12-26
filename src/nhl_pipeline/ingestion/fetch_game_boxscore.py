@@ -1,32 +1,20 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 
 import boto3
 
 from nhl_pipeline.config import get_settings
 from nhl_pipeline.ingestion.api_utils import make_api_call
+from nhl_pipeline.utils.datetime_utils import coerce_datetime, utc_now_iso
 from nhl_pipeline.utils.paths import raw_game_boxscore_key, utc_partition
-
-
-def _coerce_datetime(value: datetime | str | None) -> datetime | None:
-    if value is None or isinstance(value, datetime):
-        return value
-    if not isinstance(value, str):
-        raise TypeError(f"partition_dt must be datetime | str | None, got {type(value)}")
-
-    iso = value.strip().replace("Z", "+00:00")
-    dt = datetime.fromisoformat(iso)
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt
 
 
 def fetch_game_boxscore(game_id: int | str, timeout_s: int = 30) -> dict[str, Any]:
     url = f"https://api-web.nhle.com/v1/gamecenter/{game_id}/boxscore"
-    extracted_at = datetime.now(timezone.utc).isoformat()
+    extracted_at = utc_now_iso()
 
     resp = make_api_call(url, timeout=timeout_s)
     payload = resp.json()
@@ -46,7 +34,7 @@ def upload_game_boxscore_snapshot_to_s3(
 ) -> str:
     settings = get_settings()
 
-    part = utc_partition(_coerce_datetime(partition_dt))
+    part = utc_partition(coerce_datetime(partition_dt))
     key = raw_game_boxscore_key(part.date, part.hour, game_id=game_id)
 
     body = json.dumps(snapshot, ensure_ascii=False).encode("utf-8")
