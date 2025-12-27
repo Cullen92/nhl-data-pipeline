@@ -9,30 +9,33 @@ import boto3
 from nhl_pipeline.config import get_settings
 from nhl_pipeline.ingestion.api_utils import make_api_call
 from nhl_pipeline.utils.datetime_utils import coerce_datetime, utc_now_iso
-from nhl_pipeline.utils.paths import raw_schedule_key, utc_partition
-
-NHL_API_URL = "https://api-web.nhle.com/v1/schedule/now"
+from nhl_pipeline.utils.paths import raw_game_boxscore_key, utc_partition
 
 
-def fetch_schedule(url: str = NHL_API_URL, timeout_s: int = 30) -> dict[str, Any]:
+def fetch_game_boxscore(game_id: int | str, timeout_s: int = 30) -> dict[str, Any]:
+    url = f"https://api-web.nhle.com/v1/gamecenter/{game_id}/boxscore"
     extracted_at = utc_now_iso()
 
     resp = make_api_call(url, timeout=timeout_s)
     payload = resp.json()
 
-    # Raw wrapper: preserves lineage + makes snapshots auditable
     return {
         "extracted_at": extracted_at,
         "source_url": url,
+        "game_id": int(game_id),
         "payload": payload,
     }
 
 
-def upload_snapshot_to_s3(snapshot: dict[str, Any], partition_dt: datetime | str | None = None) -> str:
+def upload_game_boxscore_snapshot_to_s3(
+    snapshot: dict[str, Any],
+    game_id: int | str,
+    partition_dt: datetime | str | None = None,
+) -> str:
     settings = get_settings()
 
     part = utc_partition(coerce_datetime(partition_dt))
-    key = raw_schedule_key(part.date, part.hour)
+    key = raw_game_boxscore_key(part.date, part.hour, game_id=game_id)
 
     body = json.dumps(snapshot, ensure_ascii=False).encode("utf-8")
 
@@ -45,9 +48,3 @@ def upload_snapshot_to_s3(snapshot: dict[str, Any], partition_dt: datetime | str
     )
 
     return f"s3://{settings.s3_bucket}/{key}"
-
-
-if __name__ == "__main__":
-    snapshot = fetch_schedule()
-    uri = upload_snapshot_to_s3(snapshot)
-    print(f"Wrote raw schedule snapshot to: {uri}")
