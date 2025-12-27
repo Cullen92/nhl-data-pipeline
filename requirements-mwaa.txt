@@ -3,4 +3,5 @@ boto3==1.35.9
 pydantic==2.9.2
 python-dotenv==1.0.1
 pyyaml==6.0.2
+apache-airflow-providers-snowflake
 # pyspark
