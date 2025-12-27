@@ -6,6 +6,7 @@ import time
 
 from airflow.models import DAG
 from airflow.providers.standard.operators.python import PythonOperator
+from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
 
 from nhl_pipeline.ingestion.fetch_game_boxscore import (
     fetch_game_boxscore,
@@ -90,3 +91,61 @@ with DAG(
         python_callable=ingest_daily,
         op_kwargs={"ts": "{{ ts }}"},
     )
+
+    # Snowflake Load Tasks
+    # We use FORCE=FALSE (default) so we don't reload the same files if the DAG re-runs.
+    
+    load_schedule = SnowflakeOperator(
+        task_id="load_schedule_snowflake",
+        snowflake_conn_id="snowflake_default",
+        sql="""
+            COPY INTO NHL.RAW_NHL.SCHEDULE_SNAPSHOTS (payload, s3_key, ingest_ts)
+            FROM (
+                SELECT $1, METADATA$FILENAME, CURRENT_TIMESTAMP()
+                FROM @NHL.RAW_NHL.NHL_RAW_S3_STAGE/schedule/
+            )
+            FILE_FORMAT=(TYPE=JSON)
+            PATTERN='.*\\.json$';
+        """,
+    )
+
+    load_boxscores = SnowflakeOperator(
+        task_id="load_boxscores_snowflake",
+        snowflake_conn_id="snowflake_default",
+        sql="""
+            COPY INTO NHL.RAW_NHL.GAME_BOXSCORE_SNAPSHOTS (payload, s3_key, partition_date, game_id)
+            FROM (
+                SELECT 
+                    $1, 
+                    METADATA$FILENAME,
+                    TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'date=(\\\\d{4}-\\\\d{2}-\\\\d{2})', 1, 1, 'e', 1)),
+                    TO_NUMBER(REGEXP_SUBSTR(METADATA$FILENAME, 'game_id=(\\\\d+)', 1, 1, 'e', 1))
+                FROM @NHL.RAW_NHL.NHL_RAW_S3_STAGE/game_boxscore/
+            )
+            FILE_FORMAT=(TYPE=JSON)
+            PATTERN='.*\\.json$';
+        """,
+    )
+
+    load_pbp = SnowflakeOperator(
+        task_id="load_pbp_snowflake",
+        snowflake_conn_id="snowflake_default",
+        sql="""
+            COPY INTO NHL.RAW_NHL.GAME_PBP_SNAPSHOTS (payload, s3_key, partition_date, game_id)
+            FROM (
+                SELECT 
+                    $1, 
+                    METADATA$FILENAME,
+                    TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'date=(\\\\d{4}-\\\\d{2}-\\\\d{2})', 1, 1, 'e', 1)),
+                    TO_NUMBER(REGEXP_SUBSTR(METADATA$FILENAME, 'game_id=(\\\\d+)', 1, 1, 'e', 1))
+                FROM @NHL.RAW_NHL.NHL_RAW_S3_STAGE/game_pbp/
+            )
+            FILE_FORMAT=(TYPE=JSON)
+            PATTERN='.*\\.json$';
+        """,
+    )
+
+    # Dependencies
+    # S3 Ingestion must finish before we try to load any tables.
+    # The 3 load tasks can run in parallel.
+    task_ingest_daily >> [load_schedule, load_boxscores, load_pbp]
