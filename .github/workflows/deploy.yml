@@ -1,0 +1,55 @@
+name: Deploy to MWAA
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  MWAA_S3_BUCKET: ${{ secrets.MWAA_S3_BUCKET }} # Set this in GitHub Secrets
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Build Plugins
+        run: |
+          make build-plugins
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1 # Update if your MWAA is in a different region
+
+      - name: Sync DAGs
+        run: |
+          aws s3 sync dags/ s3://$MWAA_S3_BUCKET/dags/ --delete --exclude "*__pycache__*"
+
+      - name: Sync Plugins
+        run: |
+          aws s3 cp plugins.zip s3://$MWAA_S3_BUCKET/plugins.zip
+
+      - name: Sync Requirements
+        run: |
+          aws s3 cp requirements-mwaa.txt s3://$MWAA_S3_BUCKET/requirements.txt
+
+      - name: Sync dbt Project
+        # We sync the dbt project to a folder in dags/ so Airflow can access it easily
+        # or to a separate folder if you mount it differently. 
+        # Putting it in dags/dbt_nhl ensures it's available to the worker.
+        run: |
+          aws s3 sync dbt_nhl/ s3://$MWAA_S3_BUCKET/dags/dbt_nhl/ --delete --exclude "target/*" --exclude "dbt_packages/*" --exclude "logs/*"
