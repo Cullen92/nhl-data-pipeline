@@ -9,4 +9,6 @@ mypy
 pyyaml
 apache-airflow==3.0.6
 apache-airflow-providers-common-sql
+apache-airflow-providers-snowflake
+dbt-snowflake
 -e .

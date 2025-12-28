@@ -1,0 +1,35 @@
+version: 2
+
+sources:
+  - name: raw_nhl
+    database: NHL
+    schema: RAW_NHL
+    tables:
+      - name: schedule_snapshots
+        description: Raw schedule API snapshots from S3
+      - name: game_boxscore_snapshots
+        description: Raw game boxscore snapshots from S3
+      - name: game_pbp_snapshots
+        description: Raw play-by-play snapshots from S3
+
+models:
+  - name: stg_games
+    description: Cleaned game-level data from boxscore snapshots
+    columns:
+      - name: game_id
+        description: Unique NHL game identifier (10 digits)
+        tests:
+          - unique
+          - not_null
+      - name: season
+        description: Season identifier (e.g., 20252026)
+      - name: game_date
+        description: Date the game was played
+        tests:
+          - not_null
+      - name: home_team_id
+        tests:
+          - not_null
+      - name: away_team_id
+        tests:
+          - not_null
