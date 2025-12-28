@@ -1,7 +1,10 @@
-requests==2.32.3
-boto3==1.35.9
-pydantic==2.9.2
-python-dotenv==1.0.1
-pyyaml==6.0.2
+--constraint "https://raw.githubusercontent.com/apache/airflow/constraints-3.0.6/constraints-3.12.txt"
+
+boto3
+pydantic
+python-dotenv
+pyyaml
+apache-airflow-providers-common-sql
+snowflake-connector-python
+snowflake-sqlalchemy
 apache-airflow-providers-snowflake
-# pyspark
