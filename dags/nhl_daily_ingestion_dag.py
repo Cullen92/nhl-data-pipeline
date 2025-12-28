@@ -110,6 +110,8 @@ with DAG(
 
     # Snowflake Load Tasks
     # We use FORCE=FALSE (default) so we don't reload the same files if the DAG re-runs.
+    # ON_ERROR='CONTINUE' allows the load to skip files with errors while continuing to load valid files.
+    # This provides robustness for partial failures while maintaining idempotency.
     
     load_schedule = SQLExecuteQueryOperator(
         task_id="load_schedule_snowflake",
@@ -121,7 +123,8 @@ with DAG(
                 FROM @NHL.RAW_NHL.NHL_RAW_S3_STAGE/schedule/
             )
             FILE_FORMAT=(TYPE=JSON)
-            PATTERN='.*\\.json$';
+            PATTERN='.*\\.json$'
+            ON_ERROR='CONTINUE';
         """,
         autocommit=True,
     )
@@ -140,7 +143,8 @@ with DAG(
                 FROM @NHL.RAW_NHL.NHL_RAW_S3_STAGE/game_boxscore/
             )
             FILE_FORMAT=(TYPE=JSON)
-            PATTERN='.*\\.json$';
+            PATTERN='.*\\.json$'
+            ON_ERROR='CONTINUE';
         """,
         autocommit=True,
     )
@@ -159,7 +163,8 @@ with DAG(
                 FROM @NHL.RAW_NHL.NHL_RAW_S3_STAGE/game_pbp/
             )
             FILE_FORMAT=(TYPE=JSON)
-            PATTERN='.*\\.json$';
+            PATTERN='.*\\.json$'
+            ON_ERROR='CONTINUE';
         """,
         autocommit=True,
     )
