@@ -7,3 +7,8 @@ config/settings.yml
 __pycache__/
 .vscode/
 plugins.zip
+
+# dbt artifacts
+dbt_nhl/target/
+dbt_nhl/logs/
+dbt_nhl/.user.yml
