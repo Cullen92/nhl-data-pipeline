@@ -1,9 +1,11 @@
 # NHL Data Pipeline & Analytics
 Hey folks, my name is Cullen. I've spent the last 10 years as a software engineer focused on the Microsoft toolchain for my job. In an effort to learn some industry standard tools, I'm building a project that mixes my passions. The NHL and data!
 
-In the effort to learn these tools in a serious context, some choices may seem inefficient or overkill for a personal project. But, I am (mostly) trying to model how a large corporation would use these tools.
+In the effort to learn these tools in a serious context, some choices may seem inefficient or excessive for a personal project. But, I am (mostly) trying to model how a large corporation would use these tools.
 
-Expect updates to this README as I learn some lessons and play with the scope.
+I am also looking to heavily use multiple LLMs to see how effective they are in this sort of data engineering / analysis capacity. I will be using them to generate a majority of the code while I monitor and work on my propmting. Ideally I can form an opinion on which LLMs work better in which areas. This may result in a key learnings section.
+
+Lastly, expect updates to this README as I learn some lessons and play with the scope.
 
 ## Project Overview
 This project is a comprehensive data engineering pipeline designed to ingest, process, and analyze NHL game data. 
@@ -16,6 +18,7 @@ The short-term objective is to generate predictive reports for NHL players, spec
 - Implement a full CI/CD lifecycle with distinct Development and Production environments.
 - Integrate advanced visualization dashboards.
 - Implement ML/AI tooling for further analysis.
+- Playing with streaming datasets during live games.
 
 ## Technology Stack
 This project serves as a practical playground for mastering modern data engineering technologies:
@@ -88,4 +91,3 @@ Run the test suite to ensure ingestion logic is working correctly:
 ```bash
 make test
 ```
-
