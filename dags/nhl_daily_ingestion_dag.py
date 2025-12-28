@@ -6,7 +6,10 @@ import time
 
 from airflow.models import DAG
 from airflow.providers.standard.operators.python import PythonOperator
-from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
+from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+from airflow.utils.log.logging_mixin import LoggingMixin
+
+logger = LoggingMixin().log
 
 from nhl_pipeline.ingestion.fetch_game_boxscore import (
     fetch_game_boxscore,
@@ -42,16 +45,21 @@ with DAG(
         # Configure rate limiting (default 0.25 seconds between game fetches)
         sleep_s = float(os.getenv("NHL_DAILY_SLEEP_S", "0.25"))
         
+        logger.info(f"=== Starting NHL Daily Ingestion for execution date: {ts} ===")
+        
         # 1. Fetch Schedule (schedule/now)
         # This typically returns the current week's schedule (e.g. Mon-Sun)
+        logger.info("Fetching schedule from NHL API...")
         schedule_snapshot = fetch_schedule()
         schedule_uri = upload_snapshot_to_s3(schedule_snapshot, partition_dt=ts)
+        logger.info(f"✓ Uploaded schedule snapshot: {schedule_uri}")
         print(f"Uploaded schedule snapshot: {schedule_uri}")
 
         # 2. Extract Games
         # We look back 7 days to ensure we catch any updates to recent games within the returned schedule window.
         # Note: 'schedule/now' returns a limited window. To look back further (e.g. start of season),
         # you must use the backfill DAG which iterates through specific dates.
+        logger.info("Extracting game IDs from schedule...")
         payload = schedule_snapshot.get("payload")
         
         # Parse execution date
@@ -64,15 +72,20 @@ with DAG(
             only_final=True,
         )
         
+        logger.info(f"✓ Found {len(game_ids)} FINAL games in the current schedule window (lookback: 7 days)")
         print(f"Found {len(game_ids)} FINAL games in the current schedule window")
 
         # 3. Ingest Games
-        for game_id in game_ids:
+        logger.info(f"Starting game ingestion for {len(game_ids)} games...")
+        for idx, game_id in enumerate(game_ids, 1):
+            logger.info(f"Processing game {idx}/{len(game_ids)}: {game_id}")
+            
             # Fetch and upload Boxscore
             box = fetch_game_boxscore(game_id)
             box_uri = upload_game_boxscore_snapshot_to_s3(
                 box, game_id=game_id, partition_dt=ts
             )
+            logger.debug(f"  ✓ Boxscore uploaded: {box_uri}")
             print(f"Uploaded boxscore: {game_id} -> {box_uri}")
 
             # Fetch and upload Play-by-Play
@@ -80,11 +93,14 @@ with DAG(
             pbp_uri = upload_game_pbp_snapshot_to_s3(
                 pbp, game_id=game_id, partition_dt=ts
             )
+            logger.debug(f"  ✓ PBP uploaded: {pbp_uri}")
             print(f"Uploaded pbp: {game_id} -> {pbp_uri}")
             
             # Rate limiting: sleep between game fetches to avoid overwhelming the API
             if sleep_s > 0:
                 time.sleep(sleep_s)
+        
+        logger.info(f"=== Completed NHL Daily Ingestion: {len(game_ids)} games processed ===")
 
     task_ingest_daily = PythonOperator(
         task_id="ingest_daily",
@@ -95,9 +111,9 @@ with DAG(
     # Snowflake Load Tasks
     # We use FORCE=FALSE (default) so we don't reload the same files if the DAG re-runs.
     
-    load_schedule = SnowflakeOperator(
+    load_schedule = SQLExecuteQueryOperator(
         task_id="load_schedule_snowflake",
-        snowflake_conn_id="snowflake_default",
+        conn_id="snowflake_default",
         sql="""
             COPY INTO NHL.RAW_NHL.SCHEDULE_SNAPSHOTS (payload, s3_key, ingest_ts)
             FROM (
@@ -107,11 +123,12 @@ with DAG(
             FILE_FORMAT=(TYPE=JSON)
             PATTERN='.*\\.json$';
         """,
+        autocommit=True,
     )
 
-    load_boxscores = SnowflakeOperator(
+    load_boxscores = SQLExecuteQueryOperator(
         task_id="load_boxscores_snowflake",
-        snowflake_conn_id="snowflake_default",
+        conn_id="snowflake_default",
         sql="""
             COPY INTO NHL.RAW_NHL.GAME_BOXSCORE_SNAPSHOTS (payload, s3_key, partition_date, game_id)
             FROM (
@@ -125,11 +142,12 @@ with DAG(
             FILE_FORMAT=(TYPE=JSON)
             PATTERN='.*\\.json$';
         """,
+        autocommit=True,
     )
 
-    load_pbp = SnowflakeOperator(
+    load_pbp = SQLExecuteQueryOperator(
         task_id="load_pbp_snowflake",
-        snowflake_conn_id="snowflake_default",
+        conn_id="snowflake_default",
         sql="""
             COPY INTO NHL.RAW_NHL.GAME_PBP_SNAPSHOTS (payload, s3_key, partition_date, game_id)
             FROM (
@@ -143,6 +161,7 @@ with DAG(
             FILE_FORMAT=(TYPE=JSON)
             PATTERN='.*\\.json$';
         """,
+        autocommit=True,
     )
 
     # Dependencies
