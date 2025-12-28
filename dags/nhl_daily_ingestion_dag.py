@@ -9,8 +9,6 @@ from airflow.providers.standard.operators.python import PythonOperator
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.utils.log.logging_mixin import LoggingMixin
 
-logger = LoggingMixin().log
-
 from nhl_pipeline.ingestion.fetch_game_boxscore import (
     fetch_game_boxscore,
     upload_game_boxscore_snapshot_to_s3,
@@ -22,6 +20,8 @@ from nhl_pipeline.ingestion.fetch_game_pbp import (
 from nhl_pipeline.ingestion.fetch_schedule import fetch_schedule, upload_snapshot_to_s3
 from nhl_pipeline.ingestion.gamecenter_selection import extract_game_ids
 from nhl_pipeline.utils.datetime_utils import parse_airflow_ts
+
+logger = LoggingMixin().log
 
 default_args = {
     "owner": "airflow",
