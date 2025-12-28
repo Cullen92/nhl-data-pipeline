@@ -1,0 +1,28 @@
+name: 'nhl_analytics'
+version: '1.0.0'
+config-version: 2
+
+profile: 'nhl'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  nhl_analytics:
+    # Raw models (views over raw tables)
+    staging:
+      +materialized: view
+      +schema: staging
+    
+    # Analytics models (tables/incremental)
+    analytics:
+      +materialized: table
+      +schema: analytics

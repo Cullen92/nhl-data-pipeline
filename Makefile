@@ -16,3 +16,6 @@ test:
 
 lint:
 	@$(PYTHON) -m ruff check .
+
+lint-fix:
+	@$(PYTHON) -m ruff check --fix .

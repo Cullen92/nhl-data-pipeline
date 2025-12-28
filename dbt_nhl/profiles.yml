@@ -1,0 +1,15 @@
+# Place this in ~/.dbt/profiles.yml or dbt_nhl/profiles.yml
+nhl:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: XWOLWMN-IH17965
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: ACCOUNTADMIN
+      database: NHL
+      warehouse: NHL_WH
+      schema: STAGING
+      threads: 4
+      client_session_keep_alive: False
