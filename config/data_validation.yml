@@ -22,16 +22,21 @@ tables:
   - schema: RAW_NHL
     table: SCHEDULE_SNAPSHOTS
     columns:
-      - GAME_ID
-      - HOME_TEAM_ID
-      - AWAY_TEAM_ID
+      - INGEST_TS
+      - S3_KEY
+      - PARTITION_DATE
+      - PAYLOAD
   
   - schema: RAW_NHL
     table: GAME_BOXSCORE_SNAPSHOTS
     columns:
-      - GAME_ID
+      - INGEST_TS
+      - S3_KEY
+      - PAYLOAD
   
   - schema: RAW_NHL
     table: GAME_PBP_SNAPSHOTS
     columns:
-      - GAME_ID
+      - INGEST_TS
+      - S3_KEY
+      - PAYLOAD
