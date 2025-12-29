@@ -57,7 +57,7 @@ jobs:
         if: failure() && env.SLACK_WEBHOOK_URL != ''
         uses: slackapi/slack-github-action@v1
         with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-url: ${{ env.SLACK_WEBHOOK_URL }}
           payload: |
             {
               "text": "⚠️ Data Quality Validation Failed",
