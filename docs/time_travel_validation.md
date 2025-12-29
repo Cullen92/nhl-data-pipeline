@@ -36,7 +36,7 @@ export SNOWFLAKE_ACCOUNT=your_account
 export SNOWFLAKE_USER=your_user
 export SNOWFLAKE_PASSWORD=your_password
 export SNOWFLAKE_WAREHOUSE=NHL_WH
-export SNOWFLAKE_DATABASE=NHL_DB
+export SNOWFLAKE_DATABASE=NHL
 export SNOWFLAKE_ROLE=TRANSFORMER
 ```
 
@@ -135,7 +135,7 @@ LOOKBACK_MINUTES=240 make validate-data
 Validate staging environment before promoting to production:
 ```bash
 # Point at staging database
-SNOWFLAKE_DATABASE=NHL_DB_STAGING make validate-data
+SNOWFLAKE_DATABASE=NHL_STAGING make validate-data
 ```
 
 ## Configuration Best Practices
@@ -236,7 +236,7 @@ ROW_COUNT_THRESHOLD=999 make validate-data
 | `SNOWFLAKE_USER` | - | Required: Snowflake username |
 | `SNOWFLAKE_PASSWORD` | - | Required: Snowflake password |
 | `SNOWFLAKE_WAREHOUSE` | NHL_WH | Warehouse to use |
-| `SNOWFLAKE_DATABASE` | NHL_DB | Database to query |
+| `SNOWFLAKE_DATABASE` | NHL | Database to query |
 | `SNOWFLAKE_ROLE` | TRANSFORMER | Role to use |
 
 ### Config File

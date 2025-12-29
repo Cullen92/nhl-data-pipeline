@@ -47,7 +47,7 @@ jobs:
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
           SNOWFLAKE_WAREHOUSE: NHL_WH
-          SNOWFLAKE_DATABASE: NHL_DB
+          SNOWFLAKE_DATABASE: NHL
           SNOWFLAKE_ROLE: TRANSFORMER
           LOOKBACK_MINUTES: ${{ github.event.inputs.lookback_minutes || '60' }}
         run: |

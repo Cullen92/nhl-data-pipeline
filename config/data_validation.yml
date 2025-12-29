@@ -19,27 +19,19 @@ null_threshold: 0.05  # Alert if null counts change >5% (critical IDs should sta
 # - DON'T check: Stat columns (goals, assists, TOI) - nulls are expected when players don't play
 
 tables:
-  - schema: staging
-    table: stg_games
+  - schema: RAW_NHL
+    table: SCHEDULE_SNAPSHOTS
     columns:
-      # Critical identifiers - should never be null
-      - game_id
-      - home_team_id
-      - away_team_id
-      - game_date
+      - GAME_ID
+      - HOME_TEAM_ID
+      - AWAY_TEAM_ID
   
-  - schema: staging
-    table: stg_player_game_stats
+  - schema: RAW_NHL
+    table: GAME_BOXSCORE_SNAPSHOTS
     columns:
-      # Only check critical IDs, NOT stats (players not playing = normal nulls)
-      - player_id
-      - game_id  # If this is null, API data is malformed
-      - team_id
+      - GAME_ID
   
-  - schema: analytics
-    table: fact_player_game_stats
+  - schema: RAW_NHL
+    table: GAME_PBP_SNAPSHOTS
     columns:
-      # Only check critical foreign keys
-      - player_id
-      - game_id
-      - team_id
+      - GAME_ID
