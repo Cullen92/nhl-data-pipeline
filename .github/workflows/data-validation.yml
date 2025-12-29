@@ -54,7 +54,7 @@ jobs:
           make validate-data
       
       - name: Notify on failure
-        if: failure() && env.SLACK_WEBHOOK_URL != ''
+        if: failure() && secrets.SLACK_WEBHOOK_URL != ''
         uses: slackapi/slack-github-action@v1
         with:
           webhook-url: ${{ env.SLACK_WEBHOOK_URL }}
