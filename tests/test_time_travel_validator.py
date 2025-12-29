@@ -150,6 +150,30 @@ def test_validate_column_nulls_fail(mock_connection):
     assert "nulls appeared where there were none historically" in results[0].message
 
 
+def test_validate_column_nulls_empty_list(mock_connection):
+    """Test null validation with empty columns list returns empty results."""
+    conn, cursor = mock_connection
+    
+    validator = TimeTravelValidator(
+        connection_params={},
+        lookback_minutes=60,
+        null_threshold=0.10
+    )
+    validator.connect = Mock(return_value=conn)
+    
+    results = validator._validate_column_nulls(
+        conn,
+        'analytics',
+        'fact_player_game_stats',
+        []  # Empty columns list
+    )
+    
+    # Should return empty list without executing any SQL
+    assert results == []
+    # Cursor should not have executed any query
+    cursor.execute.assert_not_called()
+
+
 def test_validation_result_dataclass():
     """Test ValidationResult dataclass."""
     result = ValidationResult(
