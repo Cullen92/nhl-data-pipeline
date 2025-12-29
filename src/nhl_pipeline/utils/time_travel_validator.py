@@ -25,7 +25,7 @@ class ValidationResult:
     message: str
 
 
-class TimeTravalValidator:
+class TimeTravelValidator:
     """Validates data quality by comparing current state with historical snapshots."""
     
     def __init__(
@@ -339,7 +339,7 @@ def main():
     null_threshold = float(os.getenv('NULL_THRESHOLD', config.get('null_threshold', 0.10)))
     
     # Run validation
-    validator = TimeTravalValidator(
+    validator = TimeTravelValidator(
         connection_params=connection_params,
         lookback_minutes=lookback_minutes,
         row_count_threshold=row_count_threshold,
