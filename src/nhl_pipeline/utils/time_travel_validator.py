@@ -85,7 +85,12 @@ class TimeTravalValidator:
         passed = True
         message = f"Row count: {current_count:,} (was {historical_count:,})"
         
-        if change_pct is not None and abs(change_pct) > (self.row_count_threshold * 100):
+        # Special handling for infinity (historical count was 0)
+        if change_pct == float('inf'):
+            # New table with data - this is typically legitimate
+            passed = True
+            message += " - NEW: table had no data historically"
+        elif change_pct is not None and abs(change_pct) > (self.row_count_threshold * 100):
             passed = False
             message += f" - WARNING: {change_pct:+.1f}% change exceeds threshold"
         elif change_pct is not None:
@@ -149,7 +154,12 @@ class TimeTravalValidator:
             passed = True
             message = f"{col}: {current_nulls:,} nulls (was {historical_nulls:,})"
             
-            if change_pct is not None and abs(change_pct) > (self.null_threshold * 100):
+            # Special handling for infinity (historical count was 0)
+            if change_pct == float('inf'):
+                # Nulls appeared where there were none - this could be a data quality issue
+                passed = False
+                message += " - WARNING: nulls appeared where there were none historically"
+            elif change_pct is not None and abs(change_pct) > (self.null_threshold * 100):
                 passed = False
                 message += f" - WARNING: {change_pct:+.1f}% change in nulls"
             elif change_pct is not None and change_pct != 0:
