@@ -72,4 +72,26 @@
 
 ---
 
+## 2024-12-29: Snowflake Credentials in GitHub Actions Secrets
+
+**Status:** Accepted (temporary)
+
+**Context:** Needed to run the Time Travel data validation workflow in GitHub Actions, which requires Snowflake connectivity.
+
+**Decision:** Store `SNOWFLAKE_USER` and `SNOWFLAKE_PASSWORD` as GitHub Actions repository secrets.
+
+**Alternatives Considered:**
+- OIDC/Workload Identity Federation: Preferred approach, avoids storing credentials
+- AWS Secrets Manager with OIDC: More secure but requires additional setup
+- Skip CI validation: Would lose automated data quality checks
+
+**Consequences:**
+- Positive: Quick unblock for CI/CD pipeline testing
+- Negative: Password-based auth stored in GitHub — not ideal for production
+- Negative: Credentials must be rotated manually
+
+**Future Plan:** Migrate to OIDC-based authentication (GitHub → AWS → Snowflake) or Snowflake key-pair authentication to eliminate password storage.
+
+---
+
 <!-- Add new decisions above this line -->

@@ -324,7 +324,7 @@ def main():
         'account': os.getenv('SNOWFLAKE_ACCOUNT'),
         'user': os.getenv('SNOWFLAKE_USER'),
         'password': os.getenv('SNOWFLAKE_PASSWORD'),
-        'warehouse': os.getenv('SNOWFLAKE_WAREHOUSE', 'TRANSFORMING'),
+        'warehouse': os.getenv('SNOWFLAKE_WAREHOUSE', 'NHL_WH'),
         'database': os.getenv('SNOWFLAKE_DATABASE', 'NHL_DB'),
         'role': os.getenv('SNOWFLAKE_ROLE', 'TRANSFORMER')
     }
