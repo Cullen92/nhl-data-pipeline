@@ -1,0 +1,45 @@
+# Time Travel Data Validation Configuration
+# Configure which tables and columns to monitor
+
+lookback_minutes: 60  # Compare with data from 60 minutes ago
+
+# THRESHOLD GUIDANCE FOR NHL DATA:
+# - Regular season day: ~5-15 games = ~400-1200 player stats
+# - Busy day: 15+ games = ~1800+ player stats
+# - Playoffs: More frequent games
+# 
+# Row count can naturally vary 50-100% day-to-day based on schedule!
+# Set thresholds based on your lookback window and deployment frequency.
+
+row_count_threshold: 0.50  # Alert if row count changes >50% (accounts for busy vs slow game days)
+null_threshold: 0.05  # Alert if null counts change >5% (critical IDs should stay at 0 nulls)
+
+# NOTE: Only check columns for nulls where nulls indicate DATA QUALITY ISSUES.
+# - DO check: Critical IDs (game_id, player_id, team_id) - should never be null
+# - DON'T check: Stat columns (goals, assists, TOI) - nulls are expected when players don't play
+
+tables:
+  - schema: staging
+    table: stg_games
+    columns:
+      # Critical identifiers - should never be null
+      - game_id
+      - home_team_id
+      - away_team_id
+      - game_date
+  
+  - schema: staging
+    table: stg_player_game_stats
+    columns:
+      # Only check critical IDs, NOT stats (players not playing = normal nulls)
+      - player_id
+      - game_id  # If this is null, API data is malformed
+      - team_id
+  
+  - schema: analytics
+    table: fact_player_game_stats
+    columns:
+      # Only check critical foreign keys
+      - player_id
+      - game_id
+      - team_id

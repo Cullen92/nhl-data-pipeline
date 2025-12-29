@@ -19,3 +19,7 @@ lint:
 
 lint-fix:
 	@$(PYTHON) -m ruff check --fix .
+
+validate-data:
+	@echo "Running Time Travel data quality validation..."
+	@$(PYTHON) -m nhl_pipeline.utils.time_travel_validator
