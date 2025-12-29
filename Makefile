@@ -4,7 +4,8 @@ setup:
 
 .PHONY: setup build-plugins test lint
 
-PYTHON := .venv/bin/python
+# Use .venv if it exists, otherwise use system python
+PYTHON := $(shell if [ -f .venv/bin/python ]; then echo .venv/bin/python; else echo python; fi)
 
 build-plugins:
 	@echo "Building plugins.zip for MWAA..."

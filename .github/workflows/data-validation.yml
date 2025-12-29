@@ -24,6 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     # Only run if the workflow_run triggered this AND it was successful
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     
     steps:
       - name: Checkout code
@@ -44,15 +46,15 @@ jobs:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_WAREHOUSE: TRANSFORMING
-          SNOWFLAKE_DATABASE: NHL_DB
+          SNOWFLAKE_WAREHOUSE: NHL_WH
+          SNOWFLAKE_DATABASE: NHL
           SNOWFLAKE_ROLE: TRANSFORMER
           LOOKBACK_MINUTES: ${{ github.event.inputs.lookback_minutes || '60' }}
         run: |
           make validate-data
       
       - name: Notify on failure
-        if: failure() && secrets.SLACK_WEBHOOK_URL != ''
+        if: ${{ failure() && env.SLACK_WEBHOOK_URL != '' }}
         uses: slackapi/slack-github-action@v1
         with:
           webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
