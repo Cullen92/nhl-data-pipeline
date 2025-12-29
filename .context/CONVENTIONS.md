@@ -71,7 +71,7 @@ src/nhl_pipeline/
 
 ### Branch Naming
 
-- `<name>/<short-description>` (Exmaple: cullenm/AddContextTracking)
+- `<name>/<short-description>` (Example: cullenm/AddContextTracking)
 
 ### Commit Messages
 
