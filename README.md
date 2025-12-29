@@ -91,3 +91,10 @@ Run the test suite to ensure ingestion logic is working correctly:
 ```bash
 make test
 ```
+
+### Data Quality Validation
+Monitor data quality using Snowflake Time Travel to detect unexpected changes:
+```bash
+make validate-data
+```
+This compares current table states with historical snapshots (default: 1 hour ago) and alerts on significant changes in row counts or null values. See [Time Travel Validation Documentation](docs/time_travel_validation.md) for details.
