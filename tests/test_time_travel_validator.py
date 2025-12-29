@@ -15,6 +15,8 @@ def mock_connection():
     """Mock Snowflake connection."""
     conn = Mock()
     cursor = Mock()
+    # Mock quote_identifier to just return the identifier with quotes
+    cursor.quote_identifier = Mock(side_effect=lambda x: f'"{x}"')
     conn.cursor.return_value = cursor
     return conn, cursor
 
@@ -79,7 +81,7 @@ def test_validate_row_count_new_table(mock_connection):
     conn, cursor = mock_connection
     cursor.fetchone.return_value = (1000, 0)  # New table with data
     
-    validator = TimeTravalValidator(
+    validator = TimeTravelValidator(
         connection_params={},
         lookback_minutes=60,
         row_count_threshold=0.20  # 20% threshold

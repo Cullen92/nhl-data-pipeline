@@ -122,33 +122,40 @@ class TimeTravelValidator:
         """Compare null counts for specified columns."""
         results = []
         
-        # Build query to check nulls in both current and historical
-        null_checks = []
-        for col in columns:
-            null_checks.append(
-                f"SUM(CASE WHEN {col} IS NULL THEN 1 ELSE 0 END) AS {col}_nulls"
-            )
-        
-        query = f"""
-        WITH current_nulls AS (
-            SELECT {', '.join(null_checks)}
-            FROM {schema}.{table}
-        ),
-        historical_nulls AS (
-            SELECT {', '.join(null_checks)}
-            FROM {schema}.{table} AT(OFFSET => -{self.lookback_seconds})
-        )
-        SELECT 
-            {', '.join([f"c.{col}_nulls" for col in columns])},
-            {', '.join([f"h.{col}_nulls" for col in columns])}
-        FROM current_nulls c
-        CROSS JOIN historical_nulls h
-        """
-        
         cursor = conn.cursor()
-        cursor.execute(query)
-        result = cursor.fetchone()
-        cursor.close()
+        try:
+            # Safely quote identifiers to avoid SQL injection via schema/table/column names
+            schema_quoted = cursor.quote_identifier(schema)
+            table_quoted = cursor.quote_identifier(table)
+            
+            # Build query to check nulls in both current and historical
+            null_checks = []
+            for col in columns:
+                col_quoted = cursor.quote_identifier(col)
+                null_checks.append(
+                    f"SUM(CASE WHEN {col_quoted} IS NULL THEN 1 ELSE 0 END) AS {col_quoted}_nulls"
+                )
+            
+            query = f"""
+            WITH current_nulls AS (
+                SELECT {', '.join(null_checks)}
+                FROM {schema_quoted}.{table_quoted}
+            ),
+            historical_nulls AS (
+                SELECT {', '.join(null_checks)}
+                FROM {schema_quoted}.{table_quoted} AT(OFFSET => -{self.lookback_seconds})
+            )
+            SELECT 
+                {', '.join([f"c.{col_quoted}_nulls" for col_quoted in [cursor.quote_identifier(col) for col in columns]])},
+                {', '.join([f"h.{col_quoted}_nulls" for col_quoted in [cursor.quote_identifier(col) for col in columns]])}
+            FROM current_nulls c
+            CROSS JOIN historical_nulls h
+            """
+
+            cursor.execute(query)
+            result = cursor.fetchone()
+        finally:
+            cursor.close()
         
         # Parse results for each column
         mid_point = len(columns)
