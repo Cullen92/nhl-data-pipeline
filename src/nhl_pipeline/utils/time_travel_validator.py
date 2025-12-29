@@ -127,11 +127,11 @@ class TimeTravelValidator:
             # Safely quote identifiers to avoid SQL injection via schema/table/column names
             schema_quoted = cursor.quote_identifier(schema)
             table_quoted = cursor.quote_identifier(table)
+            columns_quoted = [cursor.quote_identifier(col) for col in columns]
             
             # Build query to check nulls in both current and historical
             null_checks = []
-            for col in columns:
-                col_quoted = cursor.quote_identifier(col)
+            for col_quoted in columns_quoted:
                 null_checks.append(
                     f"SUM(CASE WHEN {col_quoted} IS NULL THEN 1 ELSE 0 END) AS {col_quoted}_nulls"
                 )
@@ -146,8 +146,8 @@ class TimeTravelValidator:
                 FROM {schema_quoted}.{table_quoted} AT(OFFSET => -{self.lookback_seconds})
             )
             SELECT 
-                {', '.join([f"c.{col_quoted}_nulls" for col_quoted in [cursor.quote_identifier(col) for col in columns]])},
-                {', '.join([f"h.{col_quoted}_nulls" for col_quoted in [cursor.quote_identifier(col) for col in columns]])}
+                {', '.join([f"c.{col_quoted}_nulls" for col_quoted in columns_quoted])},
+                {', '.join([f"h.{col_quoted}_nulls" for col_quoted in columns_quoted])}
             FROM current_nulls c
             CROSS JOIN historical_nulls h
             """
