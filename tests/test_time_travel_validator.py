@@ -5,7 +5,7 @@ Tests for Time Travel Validator
 import pytest
 from unittest.mock import Mock
 from nhl_pipeline.utils.time_travel_validator import (
-    TimeTravalValidator,
+    TimeTravelValidator,
     ValidationResult
 )
 
@@ -21,7 +21,7 @@ def mock_connection():
 
 def test_calculate_change_pct():
     """Test percentage change calculation."""
-    validator = TimeTravalValidator(
+    validator = TimeTravelValidator(
         connection_params={},
         lookback_minutes=60
     )
@@ -40,7 +40,7 @@ def test_validate_row_count_pass(mock_connection):
     conn, cursor = mock_connection
     cursor.fetchone.return_value = (1000, 950)  # Current: 1000, Historical: 950
     
-    validator = TimeTravalValidator(
+    validator = TimeTravelValidator(
         connection_params={},
         lookback_minutes=60,
         row_count_threshold=0.20  # 20% threshold
@@ -60,7 +60,7 @@ def test_validate_row_count_fail(mock_connection):
     conn, cursor = mock_connection
     cursor.fetchone.return_value = (1300, 1000)  # 30% increase
     
-    validator = TimeTravalValidator(
+    validator = TimeTravelValidator(
         connection_params={},
         lookback_minutes=60,
         row_count_threshold=0.20  # 20% threshold
@@ -101,7 +101,7 @@ def test_validate_column_nulls_pass(mock_connection):
     # Current nulls: [5, 10], Historical nulls: [5, 9]
     cursor.fetchone.return_value = (5, 10, 5, 9)
     
-    validator = TimeTravalValidator(
+    validator = TimeTravelValidator(
         connection_params={},
         lookback_minutes=60,
         null_threshold=0.20  # 20% threshold
@@ -126,7 +126,7 @@ def test_validate_column_nulls_fail(mock_connection):
     # game_id nulls increased from 0 to 50 - this is a DATA QUALITY ISSUE
     cursor.fetchone.return_value = (50, 0, 0, 0)
     
-    validator = TimeTravalValidator(
+    validator = TimeTravelValidator(
         connection_params={},
         lookback_minutes=60,
         null_threshold=0.10  # 10% threshold
@@ -188,7 +188,7 @@ def test_print_report():
         ),
     ]
     
-    validator = TimeTravalValidator(
+    validator = TimeTravelValidator(
         connection_params={},
         lookback_minutes=60
     )
