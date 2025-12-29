@@ -3,7 +3,7 @@ name: Data Quality Validation
 on:
   # Run after dbt transformations complete
   workflow_run:
-    workflows: ["CD - Deploy dbt"]
+    workflows: ["Deploy to MWAA"]
     types:
       - completed
   
