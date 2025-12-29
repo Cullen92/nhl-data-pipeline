@@ -323,6 +323,20 @@ def main():
         'database': os.getenv('SNOWFLAKE_DATABASE', 'NHL_DB'),
         'role': os.getenv('SNOWFLAKE_ROLE', 'TRANSFORMER')
     }
+
+    # Validate required Snowflake credentials early for clearer errors
+    required_env_vars = ['SNOWFLAKE_ACCOUNT', 'SNOWFLAKE_USER', 'SNOWFLAKE_PASSWORD']
+    missing_env_vars = [var for var in required_env_vars if not os.getenv(var)]
+    if missing_env_vars:
+        print(
+            "❌ Missing required Snowflake environment variables: "
+            + ", ".join(missing_env_vars)
+        )
+        print(
+            "Please set these variables (e.g., in your shell, .env file, or CI configuration) "
+            "before running the time travel validator."
+        )
+        sys.exit(1)
     
     # Load config from YAML
     config_path = Path(__file__).parent.parent.parent.parent / 'config' / 'data_validation.yml'
