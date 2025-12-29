@@ -66,17 +66,23 @@ class TimeTravelValidator:
         table: str
     ) -> ValidationResult:
         """Compare current row count with historical."""
-        query = f"""
-        SELECT 
-            (SELECT COUNT(*) FROM {schema}.{table}) AS current_count,
-            (SELECT COUNT(*) FROM {schema}.{table} 
-             AT(OFFSET => -{self.lookback_seconds})) AS historical_count
-        """
-        
         cursor = conn.cursor()
-        cursor.execute(query)
-        result = cursor.fetchone()
-        cursor.close()
+        try:
+            # Safely quote identifiers to avoid SQL injection via schema/table names
+            schema_quoted = cursor.quote_identifier(schema)
+            table_quoted = cursor.quote_identifier(table)
+
+            query = f"""
+            SELECT 
+                (SELECT COUNT(*) FROM {schema_quoted}.{table_quoted}) AS current_count,
+                (SELECT COUNT(*) FROM {schema_quoted}.{table_quoted} 
+                 AT(OFFSET => -{self.lookback_seconds})) AS historical_count
+            """
+
+            cursor.execute(query)
+            result = cursor.fetchone()
+        finally:
+            cursor.close()
         
         current_count = result[0]
         historical_count = result[1]
