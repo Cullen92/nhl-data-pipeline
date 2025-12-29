@@ -122,6 +122,11 @@ class TimeTravelValidator:
         """Compare null counts for specified columns."""
         results = []
         
+        # Handle edge case: empty columns list would generate malformed SQL
+        if not columns:
+            logger.warning(f"No columns specified for null validation on {schema}.{table}")
+            return results
+        
         cursor = conn.cursor()
         try:
             # Safely quote identifiers to avoid SQL injection via schema/table/column names
