@@ -15,8 +15,6 @@ def mock_connection():
     """Mock Snowflake connection."""
     conn = Mock()
     cursor = Mock()
-    # Mock quote_identifier to just return the identifier with quotes
-    cursor.quote_identifier = Mock(side_effect=lambda x: f'"{x}"')
     conn.cursor.return_value = cursor
     return conn, cursor
 

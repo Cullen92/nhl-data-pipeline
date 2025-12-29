@@ -68,14 +68,10 @@ class TimeTravelValidator:
         """Compare current row count with historical."""
         cursor = conn.cursor()
         try:
-            # Safely quote identifiers to avoid SQL injection via schema/table names
-            schema_quoted = cursor.quote_identifier(schema)
-            table_quoted = cursor.quote_identifier(table)
-
             query = f"""
             SELECT 
-                (SELECT COUNT(*) FROM {schema_quoted}.{table_quoted}) AS current_count,
-                (SELECT COUNT(*) FROM {schema_quoted}.{table_quoted} 
+                (SELECT COUNT(*) FROM {schema}.{table}) AS current_count,
+                (SELECT COUNT(*) FROM {schema}.{table} 
                  AT(OFFSET => -{self.lookback_seconds})) AS historical_count
             """
 
@@ -129,30 +125,25 @@ class TimeTravelValidator:
         
         cursor = conn.cursor()
         try:
-            # Safely quote identifiers to avoid SQL injection via schema/table/column names
-            schema_quoted = cursor.quote_identifier(schema)
-            table_quoted = cursor.quote_identifier(table)
-            columns_quoted = [cursor.quote_identifier(col) for col in columns]
-            
             # Build query to check nulls in both current and historical
             null_checks = []
-            for col_quoted in columns_quoted:
+            for col in columns:
                 null_checks.append(
-                    f"SUM(CASE WHEN {col_quoted} IS NULL THEN 1 ELSE 0 END) AS {col_quoted}_nulls"
+                    f"SUM(CASE WHEN {col} IS NULL THEN 1 ELSE 0 END) AS {col}_nulls"
                 )
             
             query = f"""
             WITH current_nulls AS (
                 SELECT {', '.join(null_checks)}
-                FROM {schema_quoted}.{table_quoted}
+                FROM {schema}.{table}
             ),
             historical_nulls AS (
                 SELECT {', '.join(null_checks)}
-                FROM {schema_quoted}.{table_quoted} AT(OFFSET => -{self.lookback_seconds})
+                FROM {schema}.{table} AT(OFFSET => -{self.lookback_seconds})
             )
             SELECT 
-                {', '.join([f"c.{col_quoted}_nulls" for col_quoted in columns_quoted])},
-                {', '.join([f"h.{col_quoted}_nulls" for col_quoted in columns_quoted])}
+                {', '.join([f"c.{col}_nulls" for col in columns])},
+                {', '.join([f"h.{col}_nulls" for col in columns])}
             FROM current_nulls c
             CROSS JOIN historical_nulls h
             """
@@ -324,7 +315,7 @@ def main():
         'account': os.getenv('SNOWFLAKE_ACCOUNT'),
         'user': os.getenv('SNOWFLAKE_USER'),
         'password': os.getenv('SNOWFLAKE_PASSWORD'),
-        'warehouse': os.getenv('SNOWFLAKE_WAREHOUSE', 'TRANSFORMING'),
+        'warehouse': os.getenv('SNOWFLAKE_WAREHOUSE', 'NHL_WH'),
         'database': os.getenv('SNOWFLAKE_DATABASE', 'NHL_DB'),
         'role': os.getenv('SNOWFLAKE_ROLE', 'TRANSFORMER')
     }
