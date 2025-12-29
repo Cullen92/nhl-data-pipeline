@@ -187,7 +187,7 @@ tables:
 
 The default thresholds might need tuning based on your use case:
 
-**Row Count Threshold (default: 50%)**
+**Row Count Threshold (default: 20%)**
 
 NHL game schedules vary significantly:
 - **Light day**: 2-3 games = ~400-600 player stats
@@ -204,12 +204,12 @@ NHL game schedules vary significantly:
 - Season transitions (regular season → playoffs)
 - After planned backfills
 
-**Null Count Threshold (default: 5%)**
+**Null Count Threshold (default: 10%)**
 
 Critical IDs should **always** have 0 nulls:
 - If `game_id`, `player_id`, or `team_id` go from 0 → ANY nulls, that's a problem
 - Even 1 null in 10,000 rows (0.01%) indicates API/pipeline issues
-- Keep this threshold LOW (5% is reasonable)
+- Keep this threshold LOW (10% is reasonable)
 
 **Example scenarios:**
 
