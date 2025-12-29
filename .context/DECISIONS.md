@@ -72,28 +72,4 @@
 
 ---
 
-## 2024-12-29: Established Context Tracking System
-
-**Status:** Accepted
-
-**Context:** Working with LLM agents across multiple machines and sessions. Context was being lost between sessions, requiring repeated explanation of architecture and past decisions.
-
-**Decision:** Create a `.context/` directory with:
-- `ARCHITECTURE.md` — Stable project design documentation
-- `DECISIONS.md` — Running log of significant choices
-- `CONVENTIONS.md` — Coding standards and patterns
-
-**Alternatives Considered:**
-- Single mega-doc: Would become unwieldy
-- Wiki: Adds external dependency, harder to version
-- README only: Already exists but should stay lean for onboarding
-
-**Consequences:**
-- Positive: LLMs can quickly understand project context
-- Positive: Decisions are preserved with rationale
-- Positive: Shareable across machines via git
-- Negative: Requires discipline to maintain
-
----
-
 <!-- Add new decisions above this line -->
