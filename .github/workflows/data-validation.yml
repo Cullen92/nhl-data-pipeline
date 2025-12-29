@@ -22,6 +22,8 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     # Only run if the workflow_run triggered this AND it was successful
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
     
@@ -52,7 +54,7 @@ jobs:
           make validate-data
       
       - name: Notify on failure
-        if: failure() && '${{ secrets.SLACK_WEBHOOK_URL }}' != ''
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
         uses: slackapi/slack-github-action@v1
         with:
           webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
