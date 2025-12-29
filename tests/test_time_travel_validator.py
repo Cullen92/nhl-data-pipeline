@@ -74,6 +74,27 @@ def test_validate_row_count_fail(mock_connection):
     assert "WARNING" in result.message
 
 
+def test_validate_row_count_new_table(mock_connection):
+    """Test row count validation for new table (historical count was 0)."""
+    conn, cursor = mock_connection
+    cursor.fetchone.return_value = (1000, 0)  # New table with data
+    
+    validator = TimeTravalValidator(
+        connection_params={},
+        lookback_minutes=60,
+        row_count_threshold=0.20  # 20% threshold
+    )
+    validator.connect = Mock(return_value=conn)
+    
+    result = validator._validate_row_count(conn, 'analytics', 'fact_player_game_stats')
+    
+    # New table should pass validation
+    assert result.passed is True
+    assert result.change_pct == float('inf')
+    assert "NEW: table had no data historically" in result.message
+    assert "WARNING" not in result.message
+
+
 def test_validate_column_nulls_pass(mock_connection):
     """Test null validation that passes."""
     conn, cursor = mock_connection
@@ -123,6 +144,8 @@ def test_validate_column_nulls_fail(mock_connection):
     assert results[0].passed is False  # game_id: nulls appeared (bad!)
     assert results[1].passed is True   # player_id: no change
     assert "WARNING" in results[0].message
+    # Should have special message for nulls appearing from zero
+    assert "nulls appeared where there were none historically" in results[0].message
 
 
 def test_validation_result_dataclass():
