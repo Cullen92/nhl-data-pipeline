@@ -3,7 +3,7 @@ Tests for Time Travel Validator
 """
 
 import pytest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 from nhl_pipeline.utils.time_travel_validator import (
     TimeTravalValidator,
     ValidationResult

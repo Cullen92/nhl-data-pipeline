@@ -9,7 +9,6 @@ import logging
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any
 import snowflake.connector
-from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
