@@ -23,7 +23,7 @@ team_player_combinations AS (
         partition_date,
         'home' AS home_away,
         'F' AS position_type,
-        payload:homeTeam.forwards AS players
+        payload:playerByGameStats:homeTeam:forwards AS players
     FROM latest_game_snapshots
     
     UNION ALL
@@ -33,7 +33,7 @@ team_player_combinations AS (
         partition_date,
         'home' AS home_away,
         'D' AS position_type,
-        payload:homeTeam.defense AS players
+        payload:playerByGameStats:homeTeam:defense AS players
     FROM latest_game_snapshots
     
     UNION ALL
@@ -43,7 +43,7 @@ team_player_combinations AS (
         partition_date,
         'away' AS home_away,
         'F' AS position_type,
-        payload:awayTeam.forwards AS players
+        payload:playerByGameStats:awayTeam:forwards AS players
     FROM latest_game_snapshots
     
     UNION ALL
@@ -53,7 +53,7 @@ team_player_combinations AS (
         partition_date,
         'away' AS home_away,
         'D' AS position_type,
-        payload:awayTeam.defense AS players
+        payload:playerByGameStats:awayTeam:defense AS players
     FROM latest_game_snapshots
 )
 
@@ -68,11 +68,11 @@ SELECT
     p.value:assists::INT AS assists,
     p.value:points::INT AS points,
     p.value:plusMinus::INT AS plus_minus,
-    p.value:shots::INT AS shots,
+    p.value:sog::INT AS shots,
     p.value:pim::INT AS penalty_minutes,
     p.value:toi::STRING AS time_on_ice,
     p.value:powerPlayGoals::INT AS pp_goals,
-    p.value:shorthanded::INT AS sh_goals
+    p.value:shorthandedGoals::INT AS sh_goals
 FROM team_player_combinations,
 LATERAL FLATTEN(input => players) p
 WHERE p.value:playerId IS NOT NULL
