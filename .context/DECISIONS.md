@@ -94,4 +94,52 @@
 
 ---
 
+## 2025-12-30: Denormalized Data Warehouse Architecture
+
+**Status:** Accepted
+
+**Context:** Designing the data warehouse layer for NHL analytics with goals of:
+- Supporting ML predictions (SOG player props)
+- Learning modern ELT/analytics engineering patterns
+- Preparing for data analyst roles at modern tech companies
+- Eventually supporting shot-level heat map analysis
+
+**Decision:** Implement a **modern denormalized/hybrid approach** using medallion architecture (bronze/silver/gold) rather than strict Kimball star schema.
+
+**Architecture:**
+- **Bronze Layer:** Raw, immutable views over source data (no transformations)
+- **Silver Layer:** Cleaned, deduplicated facts and sparse dimensions
+  - Dimensions: Sparse, descriptive only (dim_player, dim_team, dim_date)
+  - Facts: Some denormalization (e.g., player_name in fact for query convenience)
+  - Multiple grains: player-per-game initially, shot-level events later
+- **Gold Layer:** Pre-aggregated, wide tables optimized for specific use cases
+  - Rolling averages, season summaries, matchup analysis
+  - ML-ready feature tables
+
+**Alternatives Considered:**
+- Pure Kimball Star Schema: Rejected due to:
+  - More JOINs required for self-service analytics
+  - Less common in modern cloud data warehouses
+  - Optimizes for storage over compute (outdated with cloud economics)
+- Fully Denormalized OBT (One Big Table): Rejected due to:
+  - Loss of dimensional model clarity
+  - Harder to maintain and reason about
+  - Doesn't support multiple grains cleanly
+
+**Consequences:**
+- Positive: Modern approach used at data-mature tech companies (dbt + Snowflake)
+- Positive: Better fit for ML use cases (wide feature tables)
+- Positive: Easier self-service analytics (less complex JOINs)
+- Positive: Cloud warehouse optimization (columnar storage handles wide tables)
+- Positive: Supports multiple fact tables at different grains (game-level, shot-level)
+- Negative: Trades dimensional modeling "purity" for pragmatism
+- Negative: Some data duplication (denormalized attributes in facts)
+
+**Implementation Plan:**
+1. Start with player-per-game grain for SOG predictions
+2. Add shot-level events later for heat maps
+3. Keep dimensions orthogonal to grain for easy extension
+
+---
+
 <!-- Add new decisions above this line -->
