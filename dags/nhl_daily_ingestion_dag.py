@@ -119,7 +119,10 @@ with DAG(
         sql="""
             COPY INTO NHL.RAW_NHL.SCHEDULE_SNAPSHOTS (payload, s3_key, ingest_ts)
             FROM (
-                SELECT $1, METADATA$FILENAME, CURRENT_TIMESTAMP()
+                SELECT 
+                    $1:payload,
+                    METADATA$FILENAME,
+                    CURRENT_TIMESTAMP()
                 FROM @NHL.RAW_NHL.NHL_RAW_S3_STAGE/schedule/
             )
             FILE_FORMAT=(TYPE=JSON)
@@ -136,7 +139,7 @@ with DAG(
             COPY INTO NHL.RAW_NHL.GAME_BOXSCORE_SNAPSHOTS (payload, s3_key, partition_date, game_id)
             FROM (
                 SELECT 
-                    $1, 
+                    $1:payload,
                     METADATA$FILENAME,
                     TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'date=(\\d{4}-\\d{2}-\\d{2})', 1, 1, 'e', 1)),
                     TO_NUMBER(REGEXP_SUBSTR(METADATA$FILENAME, 'game_id=(\\d+)', 1, 1, 'e', 1))
@@ -156,7 +159,7 @@ with DAG(
             COPY INTO NHL.RAW_NHL.GAME_PBP_SNAPSHOTS (payload, s3_key, partition_date, game_id)
             FROM (
                 SELECT 
-                    $1, 
+                    $1:payload,
                     METADATA$FILENAME,
                     TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'date=(\\d{4}-\\d{2}-\\d{2})', 1, 1, 'e', 1)),
                     TO_NUMBER(REGEXP_SUBSTR(METADATA$FILENAME, 'game_id=(\\d+)', 1, 1, 'e', 1))
