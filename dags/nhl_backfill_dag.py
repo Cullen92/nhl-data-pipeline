@@ -4,7 +4,7 @@ import os
 import time
 from datetime import datetime, timedelta, timezone
 
-from airflow.models import DAG
+from airflow.models import DAG, Variable
 from airflow.providers.standard.operators.python import PythonOperator
 
 from nhl_pipeline.ingestion.fetch_game_boxscore import (
@@ -65,7 +65,10 @@ with DAG(
             raise ValueError("NHL_BACKFILL_END_DATE must be >= NHL_BACKFILL_START_DATE")
 
         max_games_per_day = int(os.getenv("NHL_BACKFILL_MAX_GAMES_PER_DAY", "30"))
-        force = os.getenv("NHL_BACKFILL_FORCE", "false").strip().lower() in {"1", "true", "yes"}
+        # Check both Airflow Variable and environment variable for force flag
+        force_env = os.getenv("NHL_BACKFILL_FORCE", "false").strip().lower() in {"1", "true", "yes"}
+        force_var = Variable.get("NHL_BACKFILL_FORCE", default_var="false").strip().lower() in {"1", "true", "yes"}
+        force = force_env or force_var
         skip_existing_game_files = (
             os.getenv("NHL_BACKFILL_SKIP_EXISTING_GAME_FILES", "true").strip().lower() in {"1", "true", "yes"}
         )
@@ -127,17 +130,25 @@ with DAG(
                 if sleep_s > 0:
                     time.sleep(sleep_s)
 
-            completed_at = datetime.now(timezone.utc).isoformat()
-            marker = {
-                "pipeline": "nhl_backfill_gamecenter",
-                "date": day_str,
-                "games": len(game_ids),
-                "game_ids": game_ids,
-                "started_at": started_at,
-                "completed_at": completed_at,
-            }
-            marker_uri = put_json_to_s3(bucket=settings.s3_bucket, key=success_key, payload=marker)
-            print(f"{day_str}: wrote _SUCCESS marker -> {marker_uri}")
+            # Only write success marker if:
+            # 1. We found and processed games, OR
+            # 2. The date is in the past (genuinely no games scheduled)
+            # This prevents marking today/future dates as complete when games aren't FINAL yet
+            today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            if len(game_ids) > 0 or day < today:
+                completed_at = datetime.now(timezone.utc).isoformat()
+                marker = {
+                    "pipeline": "nhl_backfill_gamecenter",
+                    "date": day_str,
+                    "games": len(game_ids),
+                    "game_ids": game_ids,
+                    "started_at": started_at,
+                    "completed_at": completed_at,
+                }
+                marker_uri = put_json_to_s3(bucket=settings.s3_bucket, key=success_key, payload=marker)
+                print(f"{day_str}: wrote _SUCCESS marker -> {marker_uri}")
+            else:
+                print(f"{day_str}: skipping _SUCCESS marker (no FINAL games found, date is today or future)")
 
             day += timedelta(days=1)
 
