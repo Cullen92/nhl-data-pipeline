@@ -1,0 +1,67 @@
+version: 2
+
+models:
+  - name: bronze_schedule_snapshots
+    description: >
+      Raw schedule API snapshots stored in S3 and loaded to Snowflake.
+      Contains complete schedule responses with no transformations.
+      This is the bronze (raw) layer - immutable source of truth.
+    columns:
+      - name: payload
+        description: Full JSON payload from NHL schedule API (VARIANT type)
+        tests:
+          - not_null
+      - name: s3_key
+        description: S3 object key where this snapshot is stored
+        tests:
+          - not_null
+      - name: ingest_ts
+        description: Timestamp when data was ingested into Snowflake
+        tests:
+          - not_null
+
+  - name: bronze_game_boxscore_snapshots
+    description: >
+      Raw game boxscore snapshots stored in S3 and loaded to Snowflake.
+      Contains complete boxscore responses including player stats, team stats,
+      game info, and final scores. Bronze layer - immutable source.
+    columns:
+      - name: payload
+        description: Full JSON payload from NHL boxscore API (VARIANT type)
+        tests:
+          - not_null
+      - name: s3_key
+        description: S3 object key where this snapshot is stored
+        tests:
+          - not_null
+      - name: partition_date
+        description: Date partition for organizing data in S3 (YYYY-MM-DD format)
+        tests:
+          - not_null
+      - name: game_id
+        description: NHL game identifier (10 digits) extracted for partitioning
+        tests:
+          - not_null
+
+  - name: bronze_game_pbp_snapshots
+    description: >
+      Raw play-by-play snapshots stored in S3 and loaded to Snowflake.
+      Contains all game events including goals, shots, penalties, faceoffs, hits.
+      Includes shot coordinates for heat map analysis. Bronze layer - immutable source.
+    columns:
+      - name: payload
+        description: Full JSON payload from NHL play-by-play API (VARIANT type)
+        tests:
+          - not_null
+      - name: s3_key
+        description: S3 object key where this snapshot is stored
+        tests:
+          - not_null
+      - name: partition_date
+        description: Date partition for organizing data in S3 (YYYY-MM-DD format)
+        tests:
+          - not_null
+      - name: game_id
+        description: NHL game identifier (10 digits) extracted for partitioning
+        tests:
+          - not_null

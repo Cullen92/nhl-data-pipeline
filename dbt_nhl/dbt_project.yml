@@ -17,7 +17,13 @@ clean-targets:
 
 models:
   nhl_analytics:
-    # Raw models (views over raw tables)
+    # Bronze layer: Raw data views - immutable source of truth
+    bronze:
+      +materialized: view
+      +schema: bronze
+      +tags: ['bronze', 'raw']
+    
+    # Staging models (views over raw tables)
     staging:
       +materialized: view
       +schema: staging
