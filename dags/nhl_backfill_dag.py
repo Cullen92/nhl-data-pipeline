@@ -67,7 +67,13 @@ with DAG(
         max_games_per_day = int(os.getenv("NHL_BACKFILL_MAX_GAMES_PER_DAY", "30"))
         # Check both Airflow Variable and environment variable for force flag
         force_env = os.getenv("NHL_BACKFILL_FORCE", "false").strip().lower() in {"1", "true", "yes"}
-        force_var = Variable.get("NHL_BACKFILL_FORCE", default_var="false").strip().lower() in {"1", "true", "yes"}
+        try:
+            force_var_raw = Variable.get("NHL_BACKFILL_FORCE", default_var="false")
+        except Exception as exc:
+            # Fallback to default if Airflow Variable is temporarily unavailable
+            print(f"Warning: failed to read Airflow Variable 'NHL_BACKFILL_FORCE'; using default 'false'. Error: {exc}")
+            force_var_raw = "false"
+        force_var = force_var_raw.strip().lower() in {"1", "true", "yes"}
         force = force_env or force_var
         skip_existing_game_files = (
             os.getenv("NHL_BACKFILL_SKIP_EXISTING_GAME_FILES", "true").strip().lower() in {"1", "true", "yes"}
@@ -132,7 +138,7 @@ with DAG(
 
             # Only write success marker if:
             # 1. We found and processed games, OR
-            # 2. The date is in the past (genuinely no games scheduled)
+            # 2. The date is strictly before today (genuinely no games scheduled)
             # This prevents marking today/future dates as complete when games aren't FINAL yet
             today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
             if len(game_ids) > 0 or day < today:
