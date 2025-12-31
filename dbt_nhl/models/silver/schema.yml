@@ -5,7 +5,7 @@ models:
     description: >
       Date dimension for time intelligence and NHL season analysis.
       Includes NHL-specific season logic where seasons span calendar years (Oct-Jun).
-      Pre-generates dates from 2020 through 3 years in future.
+      Generates dates from 2020-01-01 through 3 years beyond the current date.
     columns:
       - name: date_key
         description: Date value (primary key)
