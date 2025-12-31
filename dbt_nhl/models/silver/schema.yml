@@ -314,7 +314,7 @@ models:
     description: >
       Team-level game statistics fact table.
       Grain: One row per team per game (2 rows per game for home/away).
-      Contains aggregated team performance metrics with focus on shots and shot attempts.
+      Contains aggregated team performance metrics with focus on shots on goal and related shot metrics.
       Useful for analyzing team shot metrics, shooting percentage, and computing rolling averages.
     columns:
       - name: game_id
