@@ -95,17 +95,17 @@ models:
         tests:
           - not_null
       - name: position_code
-        description: Specific position code (C, LW, RW, D)
+        description: Specific position code (C, LW, RW, L, R, D, G)
         tests:
           - not_null
           - accepted_values:
-              values: ['C', 'LW', 'RW', 'D']
+              values: ['C', 'LW', 'RW', 'L', 'R', 'D', 'G']
       - name: position_type
-        description: Broader position grouping (F for forward, D for defense)
+        description: Broader position grouping (F for forward, D for defense, G for goalie)
         tests:
           - not_null
           - accepted_values:
-              values: ['F', 'D']
+              values: ['F', 'D', 'G']
 
   - name: fact_game_results
     description: >
