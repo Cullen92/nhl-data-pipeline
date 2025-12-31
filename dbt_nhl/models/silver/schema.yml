@@ -147,6 +147,32 @@ models:
         description: Goals scored by away team
         tests:
           - not_null
+      - name: season
+        description: NHL season identifier (e.g., 20242025 for 2024-2025 season)
+        tests:
+          - not_null
+      - name: game_type
+        description: Type of game (2 = Regular Season, 3 = Playoffs)
+        tests:
+          - not_null
+          - accepted_values:
+              values: [2, 3]
+      - name: periods_played
+        description: Number of periods played (usually 3, can be 4+ for overtime/shootout)
+        tests:
+          - not_null
+      - name: goal_differential
+        description: Absolute difference in goals between home and away teams
+        tests:
+          - not_null
+      - name: total_goals
+        description: Total goals scored by both teams combined
+        tests:
+          - not_null
+      - name: venue_name
+        description: Name of the venue where the game was played
+        tests:
+          - not_null
       - name: winning_team_id
         description: Team ID of the winner (NULL if tie, though rare in modern NHL)
       - name: game_state
@@ -157,6 +183,14 @@ models:
               values: ['OFF']
       - name: went_to_overtime
         description: Boolean - did game go beyond regulation (3 periods)
+        tests:
+          - not_null
+      - name: source_partition_date
+        description: Date partition from source data (for audit and debugging)
+        tests:
+          - not_null
+      - name: source_s3_key
+        description: S3 key of the source file (for audit and lineage tracking)
         tests:
           - not_null
 
