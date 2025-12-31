@@ -29,7 +29,7 @@ WITH player_data AS (
     WHERE p.value:playerId IS NOT NULL
     
         {%- if not loop.last %}
-    UNION ALL
+    UNION
         {%- endif %}
     {%- endfor %}
 )
