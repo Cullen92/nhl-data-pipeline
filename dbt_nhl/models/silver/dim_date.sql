@@ -30,11 +30,11 @@ date_spine AS (
 game_dates AS (
     -- Identify which dates have games scheduled/played
     SELECT DISTINCT
-        partition_date AS game_date,
+        payload:gameDate::DATE AS game_date,
         COUNT(*) AS games_on_date
     FROM {{ ref('bronze_game_boxscore_snapshots') }}
-    WHERE partition_date IS NOT NULL
-    GROUP BY partition_date
+    WHERE payload:gameDate IS NOT NULL
+    GROUP BY payload:gameDate::DATE
 )
 
 SELECT
