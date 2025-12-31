@@ -80,7 +80,7 @@ team_stats AS (
         
     FROM latest_snapshots ls
     
-    UNION
+    UNION ALL
     
     -- Away team stats
     SELECT
