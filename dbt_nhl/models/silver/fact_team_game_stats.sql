@@ -158,4 +158,3 @@ FROM team_stats ts
 LEFT JOIN team_aggregates ta ON ts.game_id = ta.game_id AND ts.team_id = ta.team_id AND ts.home_away = ta.home_away
 WHERE ts.game_id IS NOT NULL
   AND ts.team_id IS NOT NULL
-ORDER BY ts.game_date DESC, ts.game_id, ts.team_id
