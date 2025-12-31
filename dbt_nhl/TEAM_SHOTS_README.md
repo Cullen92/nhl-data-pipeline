@@ -140,7 +140,7 @@ dbt test --select fact_team_game_stats
 
 ## Notes
 
-- Shot attempts note yet included (tracking missed shots)
+- Shot attempts not yet included (tracking missed shots)
 - The `team_shot_metrics` view only includes regular season games (game_type = 2) for cleaner statistical analysis
 - Rolling averages use `ROWS BETWEEN X PRECEDING AND CURRENT ROW` to include the current game
 - All percentages are stored as 0-100 scale (not 0-1)
