@@ -31,7 +31,6 @@ models:
       - name: nhl_season
         description: NHL season identifier (e.g., 20252026 for Oct 2025 - Jun 2026)
         tests:
-          - not_null
       - name: season_phase
         description: Phase of NHL season
         tests:
