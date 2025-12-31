@@ -1,0 +1,312 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: >
+      Date dimension for time intelligence and NHL season analysis.
+      Includes NHL-specific season logic where seasons span calendar years (Oct-Jun).
+      Generates a continuous date range with historical dates fixed to start on 2020-01-01 and future dates extending through 3 years beyond the current date.
+    columns:
+      - name: date_key
+        description: Date value (primary key)
+        tests:
+          - unique
+          - not_null
+      - name: year
+        description: Calendar year (e.g., 2025)
+        tests:
+          - not_null
+      - name: month
+        description: Month number (1-12)
+        tests:
+          - not_null
+      - name: day
+        description: Day of month (1-31)
+        tests:
+          - not_null
+      - name: day_of_week
+        description: Day of week (0=Sunday, 6=Saturday)
+        tests:
+          - not_null
+      - name: nhl_season
+        description: NHL season identifier (e.g., 20252026 for Oct 2025 - Jun 2026)
+        tests:
+      - name: season_phase
+        description: Phase of NHL season
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Early Season', 'Mid Season', 'Late Season', 'Playoffs', 'Off Season', 'Unknown']
+      - name: is_game_day
+        description: Boolean - are there games scheduled/played on this date
+        tests:
+          - not_null
+      - name: games_on_date
+        description: Count of games on this date
+        tests:
+          - not_null
+      - name: is_weekend
+        description: Boolean - is this a Saturday or Sunday
+        tests:
+          - not_null
+
+  - name: dim_team
+    description: >
+      Team dimension (sparse dimension) containing one row per NHL team.
+      Includes team identification and naming attributes.
+      Updates happen rarely (expansion, relocation).
+    columns:
+      - name: team_id
+        description: NHL team identifier (primary key)
+        tests:
+          - unique
+          - not_null
+      - name: team_abbrev
+        description: Three-letter team abbreviation (e.g., TOR, BOS, CHI)
+        tests:
+          - not_null
+      - name: place_name
+        description: City or location name (e.g., Toronto, Boston)
+        tests:
+          - not_null
+      - name: common_name
+        description: Team common name (e.g., Maple Leafs, Bruins)
+        tests:
+          - not_null
+      - name: team_name
+        description: Full team name combining place and common name
+        tests:
+          - not_null
+
+  - name: dim_player
+    description: >
+      Player dimension (sparse dimension) containing one row per NHL player.
+      Grows as new players appear in games (rookies, callups, trades).
+      Currently sourced from boxscore player stats.
+    columns:
+      - name: player_id
+        description: NHL player identifier (primary key)
+        tests:
+          - unique
+          - not_null
+      - name: player_name
+        description: Player name as it appears in boxscores (abbreviated format)
+        tests:
+          - not_null
+      - name: position_code
+        description: Specific position code (C, LW, RW, L, R, D, G)
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['C', 'LW', 'RW', 'L', 'R', 'D', 'G']
+      - name: position_type
+        description: Broader position grouping (F for forward, D for defense, G for goalie)
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['F', 'D', 'G']
+
+  - name: fact_game_results
+    description: >
+      Game results fact table with one row per completed game.
+      Contains scores, outcomes, and references to dimension tables.
+      Grain: game_id (one row per game).
+    columns:
+      - name: game_id
+        description: NHL game identifier (primary key)
+        tests:
+          - unique
+          - not_null
+      - name: date_key
+        description: Foreign key to dim_date
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: home_team_id
+        description: Foreign key to dim_team (home team)
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_team')
+              field: team_id
+      - name: away_team_id
+        description: Foreign key to dim_team (away team)
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_team')
+              field: team_id
+      - name: home_score
+        description: Goals scored by home team
+        tests:
+          - not_null
+      - name: away_score
+        description: Goals scored by away team
+        tests:
+          - not_null
+      - name: season
+        description: NHL season identifier (e.g., 20242025 for 2024-2025 season)
+        tests:
+          - not_null
+      - name: game_type
+        description: Type of game (1 = Preseason, 2 = Regular Season, 3 = Playoffs, 4 = All-Star)
+        tests:
+          - not_null
+      - name: periods_played
+        description: Number of periods played (usually 3, can be 4+ for overtime/shootout)
+        tests:
+          - not_null
+      - name: goal_differential
+        description: Absolute difference in goals between home and away teams (always non-negative, calculated as ABS(home_score - away_score))
+        tests:
+          - not_null
+      - name: total_goals
+        description: Total goals scored by both teams combined
+        tests:
+          - not_null
+      - name: venue_name
+        description: Name of the venue where the game was played
+        tests:
+          - not_null
+      - name: winning_team_id
+        description: Team ID of the winner (NULL if tie, though rare in modern NHL)
+      - name: game_state
+        description: Game completion status (OFF = final, LIVE = in progress, FUT = future)
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['OFF']
+      - name: went_to_overtime
+        description: Boolean - did game go beyond regulation (3 periods)
+        tests:
+          - not_null
+      - name: source_partition_date
+        description: Date partition from source data (for audit and debugging)
+        tests:
+          - not_null
+      - name: source_s3_key
+        description: S3 key of the source file (for audit and lineage tracking)
+        tests:
+          - not_null
+
+  - name: fact_player_game_stats
+    description: >
+      Player game statistics fact table with one row per player per game.
+      Contains detailed performance metrics and denormalized attributes.
+      Grain: game_id + player_id (one row per player appearance in a game).
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - game_id
+            - player_id
+    columns:
+      - name: game_id
+        description: Foreign key to fact_game_results
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fact_game_results')
+              field: game_id
+      - name: player_id
+        description: Foreign key to dim_player
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_player')
+              field: player_id
+      - name: date_key
+        description: Foreign key to dim_date
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: team_id
+        description: Foreign key to dim_team
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_team')
+              field: team_id
+      - name: player_name
+        description: Player name (denormalized from dim_player)
+      - name: team_abbrev
+        description: Team abbreviation (denormalized from dim_team)
+      - name: home_away
+        description: Whether player was on home or away team
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['home', 'away']
+      - name: position_type
+        description: Broader position grouping (F or D)
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['F', 'D']
+      - name: goals
+        description: Goals scored by player in this game
+        tests:
+          - not_null
+      - name: assists
+        description: Assists by player in this game
+        tests:
+          - not_null
+      - name: points
+        description: Total points (goals + assists)
+        tests:
+          - not_null
+      - name: shots
+        description: Shots on goal
+        tests:
+          - not_null
+      - name: position_code
+        description: Specific position code for the player in this game (C, LW, RW, L, R, D)
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['C', 'LW', 'RW', 'L', 'R', 'D']
+      - name: plus_minus
+        description: Plus/minus rating - difference between goals scored for and against while player is on ice (even strength and shorthanded)
+        tests:
+          - not_null
+      - name: penalty_minutes
+        description: Total penalty minutes accumulated by player in this game
+        tests:
+          - not_null
+      - name: pp_goals
+        description: Power play goals scored by player in this game
+        tests:
+          - not_null
+      - name: sh_goals
+        description: Shorthanded goals scored by player in this game
+        tests:
+          - not_null
+      - name: hits
+        description: Number of hits delivered by player in this game
+        tests:
+          - not_null
+      - name: blocked_shots
+        description: Number of shots blocked by player in this game
+        tests:
+          - not_null
+      - name: giveaways
+        description: Number of giveaways (turnovers) by player in this game
+        tests:
+          - not_null
+      - name: takeaways
+        description: Number of takeaways (forced turnovers) by player in this game
+        tests:
+          - not_null
+      - name: faceoff_win_pct
+        description: Faceoff win percentage for player in this game (0.0 to 1.0)
+      - name: time_on_ice
+        description: Total time on ice in MM:SS format (e.g., 18:23)
+        tests:
+          - not_null
+      - name: shifts
+        description: Number of shifts played by player in this game
+        tests:
+          - not_null

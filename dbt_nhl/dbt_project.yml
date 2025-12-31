@@ -23,12 +23,18 @@ models:
       +schema: bronze
       +tags: ['bronze', 'raw']
     
-    # Staging models (views over raw tables)
+    # Silver layer: Cleaned, conformed data - single source of truth
+    silver:
+      +materialized: table
+      +schema: silver
+      +tags: ['silver']
+    
+    # Staging models (views over raw tables) - legacy
     staging:
       +materialized: view
       +schema: staging
     
-    # Analytics models (tables/incremental)
+    # Analytics models (tables/incremental) - legacy
     analytics:
       +materialized: table
       +schema: analytics
