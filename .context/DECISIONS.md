@@ -165,7 +165,7 @@ SELECT ... FROM ... {{ combo.team }}:{{ combo.path }}
 ```
 
 **Alternatives Considered:**
-- Copy-paste SQL: Simple but unmaintainable (58 lines → 27 lines with Jinja)
+- Copy-paste SQL: Simple but unmaintainable (68 lines → 46 lines with Jinja)
 - Macro functions: More reusable but overkill for single model
 - UNION ALL with CASE statements: Verbose, less clear intent
 
@@ -173,7 +173,7 @@ SELECT ... FROM ... {{ combo.team }}:{{ combo.path }}
 - Positive: DRY principle - change logic once, applies to all combinations
 - Positive: Easy to extend (add goalies = 1 line in array)
 - Positive: Clear intent - "loop over team/position combinations"
-- Positive: Reduced from 58 lines to 27 lines
+- Positive: Reduced file from 68 lines (hypothetical copy-paste version) to 46 lines (32% reduction)
 - Negative: Learning curve for Jinja syntax
 - Negative: Whitespace control gotchas (`{%-` vs `{%`)
 - Negative: Harder to debug (must check compiled SQL in target/)
