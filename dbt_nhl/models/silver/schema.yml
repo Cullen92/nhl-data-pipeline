@@ -263,3 +263,51 @@ models:
         description: Shots on goal
         tests:
           - not_null
+      - name: position_code
+        description: Specific position code for the player in this game (C, LW, RW, L, R, D)
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['C', 'LW', 'RW', 'L', 'R', 'D']
+      - name: plus_minus
+        description: Plus/minus rating - difference between goals scored for and against while player is on ice (even strength and shorthanded)
+        tests:
+          - not_null
+      - name: penalty_minutes
+        description: Total penalty minutes accumulated by player in this game
+        tests:
+          - not_null
+      - name: pp_goals
+        description: Power play goals scored by player in this game
+        tests:
+          - not_null
+      - name: sh_goals
+        description: Shorthanded goals scored by player in this game
+        tests:
+          - not_null
+      - name: hits
+        description: Number of hits delivered by player in this game
+        tests:
+          - not_null
+      - name: blocked_shots
+        description: Number of shots blocked by player in this game
+        tests:
+          - not_null
+      - name: giveaways
+        description: Number of giveaways (turnovers) by player in this game
+        tests:
+          - not_null
+      - name: takeaways
+        description: Number of takeaways (forced turnovers) by player in this game
+        tests:
+          - not_null
+      - name: faceoff_win_pct
+        description: Faceoff win percentage for player in this game (0.0 to 1.0)
+      - name: time_on_ice
+        description: Total time on ice in MM:SS format (e.g., 18:23)
+        tests:
+          - not_null
+      - name: shifts
+        description: Number of shifts played by player in this game
+        tests:
+          - not_null
