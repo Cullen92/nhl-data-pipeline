@@ -56,10 +56,16 @@ SELECT
     -- NHL Season Logic
     -- NHL season starts in October and ends in June
     -- Season 20252026 means Oct 2025 - June 2026
+    -- Off-season months (July–September) have NULL nhl_season
     CASE 
-        WHEN MONTH(ds.date_day) >= 10 
-        THEN YEAR(ds.date_day) * 10000 + (YEAR(ds.date_day) + 1)
-        ELSE (YEAR(ds.date_day) - 1) * 10000 + YEAR(ds.date_day)
+        WHEN MONTH(ds.date_day) BETWEEN 10 AND 12 THEN
+            YEAR(ds.date_day) * 10000 + (YEAR(ds.date_day) + 1)
+        WHEN MONTH(ds.date_day) BETWEEN 1 AND 6 THEN
+            (YEAR(ds.date_day) - 1) * 10000 + YEAR(ds.date_day)
+        WHEN MONTH(ds.date_day) BETWEEN 7 AND 9 THEN
+            NULL
+        ELSE
+            NULL
     END AS nhl_season,
     
     -- Season Phase (useful for context/analysis)
