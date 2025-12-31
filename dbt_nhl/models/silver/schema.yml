@@ -165,6 +165,11 @@ models:
       Player game statistics fact table with one row per player per game.
       Contains detailed performance metrics and denormalized attributes.
       Grain: game_id + player_id (one row per player appearance in a game).
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - game_id
+            - player_id
     columns:
       - name: game_id
         description: Foreign key to fact_game_results
