@@ -14,7 +14,7 @@ WITH latest_game_snapshots AS (
         partition_date,
         payload
     FROM {{ source('raw_nhl', 'game_boxscore_snapshots') }}
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY payload:id ORDER BY partition_date DESC) = 1
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY payload:id ORDER BY partition_date DESC, s3_key DESC) = 1
 ),
 
 team_player_combinations AS (

@@ -29,4 +29,4 @@ SELECT
     s3_key AS source_s3_key,
     partition_date AS source_partition_date
 FROM {{ source('raw_nhl', 'game_boxscore_snapshots') }}
-QUALIFY ROW_NUMBER() OVER (PARTITION BY payload:id ORDER BY partition_date DESC) = 1
+QUALIFY ROW_NUMBER() OVER (PARTITION BY payload:id ORDER BY partition_date DESC, s3_key DESC) = 1
