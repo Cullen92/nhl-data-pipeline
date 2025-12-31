@@ -109,4 +109,3 @@ SELECT
     ROUND(shots_against_season_avg, 2) AS shots_against_season_avg
 
 FROM rolling_averages
-ORDER BY game_date DESC, team_id
