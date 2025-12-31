@@ -338,7 +338,7 @@ models:
         tests:
           - not_null
       - name: game_type
-        description: Type of game (2=Regular Season, 3=Playoffs)
+        description: Type of game (1=Preseason, 2=Regular Season, 3=Playoffs, 4=All-Star)
         tests:
           - not_null
       - name: home_away
