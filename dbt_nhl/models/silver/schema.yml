@@ -99,7 +99,7 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['C', 'L', 'R', 'D', 'LW', 'RW']
+              values: ['C', 'LW', 'RW', 'D']
       - name: position_type
         description: Broader position grouping (F for forward, D for defense)
         tests:
