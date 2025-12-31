@@ -245,7 +245,7 @@ LEFT JOIN dim_team t ON ps.team_id = t.team_id
 **Consequences:**
 - Positive: **Faster queries** - most analytics need player/team names
 - Positive: Self-service friendly - analysts don't need dimension knowledge
-- Positive: Columnnar storage minimizes space overhead
+- Positive: Columnar storage minimizes space overhead
 - Negative: Data duplication (~20KB per 22K rows for names)
 - Negative: Name changes require fact table updates (rare for NHL players)
 - Negative: Deviates from strict Kimball methodology
