@@ -162,23 +162,19 @@ WHERE h.home_games >= 5 AND a.away_games >= 5
 ORDER BY home_advantage DESC;
 
 -- =============================================================================
--- 8. SHOT ATTEMPTS AND BLOCKED SHOTS
+-- 8. SHOT VOLUME
 -- =============================================================================
 
--- Teams generating most shot attempts (including blocked)
+-- Teams generating the most shots on goal
 SELECT 
     team_id,
     COUNT(*) AS games,
-    ROUND(AVG(shot_attempts_for), 2) AS avg_shot_attempts,
-    ROUND(AVG(shots_for), 2) AS avg_shots_on_goal,
-    ROUND(AVG(blocked_shots), 2) AS avg_blocked,
-    -- What % of attempts actually become shots on goal
-    ROUND(AVG(shots_for) / NULLIF(AVG(shot_attempts_for), 0) * 100, 1) AS shot_success_rate
+    ROUND(AVG(shots_for), 2) AS avg_shots_on_goal
 FROM nhl_analytics.silver.fact_team_game_stats
 WHERE season = 20242025 AND game_type = 2
 GROUP BY team_id
 HAVING games >= 10
-ORDER BY avg_shot_attempts DESC;
+ORDER BY avg_shots_on_goal DESC;
 
 -- =============================================================================
 -- 9. RECENT FORM COMPARISON
