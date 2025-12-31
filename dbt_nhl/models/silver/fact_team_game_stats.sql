@@ -30,7 +30,7 @@ WITH latest_snapshots AS (
     QUALIFY ROW_NUMBER() OVER (PARTITION BY payload:id ORDER BY partition_date DESC, s3_key DESC) = 1
 ),
 
--- Aggregate player stats to get team-level shot attempts and other stats
+-- Aggregate player stats to derive team-level hits, giveaways, takeaways, penalties, and goal metrics
 team_aggregates AS (
     SELECT
         game_id,
