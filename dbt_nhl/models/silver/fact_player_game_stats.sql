@@ -70,7 +70,7 @@ player_stats AS (
         p.value:position::STRING AS position_code,
         '{{ combo.type }}' AS position_type,
         
-        -- Player stats (using Jinja to reduce repetition)
+        -- Player stats (using Jinja to reduce repetition in the stat fields column list)
         {%- for stat in stat_fields %}
         p.value:{{ stat.json }}::{{ stat.type }} AS {{ stat.alias }}{{ ',' if not loop.last else '' }}
         {%- endfor %}
