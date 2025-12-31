@@ -141,8 +141,8 @@ with DAG(
                 SELECT 
                     $1:payload,
                     METADATA$FILENAME,
-                    TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'date=(\\d{4}-\\d{2}-\\d{2})', 1, 1, 'e', 1)),
-                    TO_NUMBER(REGEXP_SUBSTR(METADATA$FILENAME, 'game_id=(\\d+)', 1, 1, 'e', 1))
+                    TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'date=(\\d{4}-\\d{2}-\\d{2})', 1, 1, 'e')),
+                    TO_NUMBER(REGEXP_SUBSTR(METADATA$FILENAME, 'game_id=(\\d+)', 1, 1, 'e'))
                 FROM @NHL.RAW_NHL.NHL_RAW_S3_STAGE/game_boxscore/
             )
             FILE_FORMAT=(TYPE=JSON)
@@ -161,8 +161,8 @@ with DAG(
                 SELECT 
                     $1:payload,
                     METADATA$FILENAME,
-                    TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'date=(\\d{4}-\\d{2}-\\d{2})', 1, 1, 'e', 1)),
-                    TO_NUMBER(REGEXP_SUBSTR(METADATA$FILENAME, 'game_id=(\\d+)', 1, 1, 'e', 1))
+                    TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'date=(\\d{4}-\\d{2}-\\d{2})', 1, 1, 'e')),
+                    TO_NUMBER(REGEXP_SUBSTR(METADATA$FILENAME, 'game_id=(\\d+)', 1, 1, 'e'))
                 FROM @NHL.RAW_NHL.NHL_RAW_S3_STAGE/game_pbp/
             )
             FILE_FORMAT=(TYPE=JSON)
