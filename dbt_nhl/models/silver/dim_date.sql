@@ -41,7 +41,6 @@ SELECT
     
     -- Date Components
     YEAR(ds.date_day) AS year,
-    QUARTER(ds.date_day) AS quarter,
     MONTH(ds.date_day) AS month,
     DAY(ds.date_day) AS day,
     DAYOFWEEK(ds.date_day) AS day_of_week,  -- 0=Sunday, 6=Saturday
