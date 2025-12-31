@@ -15,7 +15,6 @@ New dbt models for analyzing team-level shot statistics and metrics in NHL games
 - `game_id`, `team_id`: Composite primary key
 - `shots_for`, `shots_against`: Shots on goal for/against the team
 - `shot_differential`: Net shots (shots_for - shots_against)
-- `blocked_shots`: Shots blocked by opposing team
 - `shooting_pct`: Goals scored / shots on goal
 - `save_pct`: Goalie save percentage
 - `goals_for`, `goals_against`, `goal_differential`
