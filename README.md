@@ -1,11 +1,6 @@
-# NHL Data Pipeline & Analytics
-Hey folks, my name is Cullen. I've spent the last 10 years as a software engineer focused on the Microsoft toolchain for my job. In an effort to learn some industry standard tools, I'm building a project that mixes my passions. The NHL and data!
+# NHL Data Analytics Pipeline
 
-In the effort to learn these tools in a serious context, some choices may seem inefficient or excessive for a personal project. But, I am (mostly) trying to model how a large corporation would use these tools.
-
-I am also looking to heavily use multiple LLMs to see how effective they are in this sort of data engineering / analysis capacity. I will be using them to generate a majority of the code while I monitor and work on my propmting. Ideally I can form an opinion on which LLMs work better in which areas. This may result in a key learnings section.
-
-Lastly, expect updates to this README as I learn some lessons and play with the scope.
+A production-grade data platform for NHL game analytics, featuring automated ingestion, medallion architecture transformation, and dimensional modeling for advanced statistics and player performance analysis.
 
 ## Project Overview
 This project is a comprehensive data engineering pipeline designed to ingest, process, and analyze NHL game data. 
@@ -19,6 +14,11 @@ The short-term objective is to generate predictive reports for NHL players, spec
 - Integrate advanced visualization dashboards.
 - Implement ML/AI tooling for further analysis.
 - Playing with streaming datasets during live games.
+
+## Architecture Overview
+```
+NHL API → Airflow (MWAA) → S3 (Data Lake) → Snowflake (Raw) → dbt (Bronze/Silver/Gold) → Analytics
+```
 
 ## Technology Stack
 This project serves as a practical playground for mastering modern data engineering technologies:
@@ -52,7 +52,15 @@ To maintain code quality and ensure reliable deployments, the project utilizes a
     *   **Testing:** Unit tests are executed via `pytest` to verify ingestion logic.
 *   **Pull Request Process:**
     *   All changes require a Pull Request (PR) to be merged.
-    *   **GitHub Copilot:** Leveraged to assist with PR descriptions, code reviews, and generating test cases.
+    *   **AI-Assisted Development:** Leveraging AI coding assistants (GitHub Copilot, multiple LLMs) as pair programming tools to accelerate development while maintaining code quality through testing and reviews.
+
+## Data Quality & Observability
+Robust data quality practices ensure reliable analytics:
+
+*   **Automated Testing:** dbt tests validate critical data constraints (uniqueness, not_null, accepted_values)
+*   **Metadata Extraction:** Game IDs and partition dates extracted from S3 file paths during ingestion
+*   **Time Travel Validation:** Snowflake Time Travel monitors for unexpected data changes
+*   **Issue Resolution:** Identified and fixed regex extraction bug causing 100% NULL metadata in production data (see commit history)
 
 ## Current Progress
 
@@ -69,10 +77,19 @@ Airflow DAGs have been deployed to automate the workflow:
 *   `nhl_backfill_dag`: Handles historical data loading to populate the warehouse.
 *   `nhl_raw_stats_skater_daily`: Specialized pipeline for daily skater statistics.
 
-### 3. Transformation (dbt)
-Initial dbt models are set up to transform raw data into analytical tables:
-*   **Staging:** `stg_games`, `stg_player_game_stats` clean and normalize raw data.
-*   **Analytics:** `fact_player_game_stats` aggregates player performance for downstream analysis.
+### 3. Data Warehouse (Snowflake + dbt)
+Implements a medallion architecture (Bronze → Silver → Gold) for data quality and analytics:
+
+*   **Bronze Layer:** Immutable raw data views with automated data quality tests
+    - `bronze_schedule_snapshots`: Daily game schedules
+    - `bronze_game_boxscore_snapshots`: Game-level boxscore data
+    - `bronze_game_pbp_snapshots`: Play-by-play event data
+    - 10 dbt tests validating critical fields (all passing)
+*   **Silver Layer:** Dimensional model with fact and dimension tables (in progress)
+    - `dim_date`: Date dimension with NHL season-aware logic
+    - `dim_team`, `dim_player`: Planned sparse dimensions
+    - `fact_game_results`, `fact_player_game_stats`: Planned fact tables
+*   **Gold Layer:** Pre-aggregated analytics and ML-ready features (planned)
 
 ## Getting Started
 
@@ -98,3 +115,21 @@ Monitor data quality using Snowflake Time Travel to detect unexpected changes:
 make validate-data
 ```
 This compares current table states with historical snapshots (default: 1 hour ago) and alerts on significant changes in row counts or null values. See [Time Travel Validation Documentation](docs/time_travel_validation.md) for details.
+
+## About This Project
+
+Hey folks, my name is Cullen. I've spent the last 10 years as a software engineer focused on the Microsoft toolchain. In an effort to learn industry-standard data engineering tools, I'm building this project that combines my passions: the NHL and data!
+
+Some choices may seem excessive for a personal project, but I'm intentionally modeling how enterprise organizations use these tools in production environments. This includes:
+- Proper CI/CD workflows with PR reviews and automated testing
+- Structured data architecture (medallion + dimensional modeling)
+- Infrastructure as code and environment separation
+- Comprehensive documentation and data quality monitoring
+
+## Key Technical Learnings
+
+*   **Data Quality Investigation:** Debugged production issues using SQL queries to identify root causes (regex extraction bug)
+*   **Dimensional Modeling:** Applied grain definition, slowly changing dimensions, and denormalized design patterns for cloud warehouses
+*   **Idempotency Patterns:** Designed transformation logic for reliable reprocessing and incremental loads
+*   **Modern Data Stack:** Hands-on experience with industry-standard tools (Airflow, dbt, Snowflake, AWS)
+*   **Cloud Cost Optimization:** Balancing normalization vs denormalization for query performance and storage costs
