@@ -34,7 +34,7 @@ WITH latest_snapshots AS (
         partition_date,
         s3_key
     FROM {{ ref('bronze_game_boxscore_snapshots') }}
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY payload:id ORDER BY partition_date DESC) = 1
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY payload:id ORDER BY partition_date DESC, s3_key DESC) = 1
 )
 
 SELECT
