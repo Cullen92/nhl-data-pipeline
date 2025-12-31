@@ -18,7 +18,7 @@ WITH team_data AS (
     FROM {{ ref('bronze_game_boxscore_snapshots') }}
     WHERE payload:homeTeam.id IS NOT NULL
     
-    UNION ALL
+    UNION
     
     SELECT DISTINCT
         payload:awayTeam.id::INT AS team_id,
