@@ -18,8 +18,8 @@ WITH numbers AS (
 ),
 
 date_spine AS (
-    -- Generate dates from 2020-01-01 through ~7 years in the future
-    -- Add each number as days to the start date
+    -- Generate 2500 sequential dates starting from 2020-01-01
+    -- (full date range is ~6.8 years; final SELECT limits to 3 years from CURRENT_DATE)
     SELECT
         DATEADD(DAY, n, '2020-01-01'::DATE) AS date_day
     FROM numbers
