@@ -88,7 +88,7 @@ Implements a medallion architecture (Bronze → Silver → Gold) for data qualit
 *   **Silver Layer:** Dimensional model with fact and dimension tables (in progress)
     - `dim_date`: Date dimension with NHL season-aware logic
     - `dim_team`, `dim_player`: Planned sparse dimensions
-    - `fact_game_results`, `fact_player_game_stats`: Planned fact tables
+    - `fact_game_results`, `fact_player_game_stats`: Implemented fact tables
 *   **Gold Layer:** Pre-aggregated analytics and ML-ready features (planned)
 
 ## Getting Started
