@@ -99,10 +99,7 @@ SELECT
         WHEN YEAR(ds.date_day) = YEAR(CURRENT_DATE()) 
         AND MONTH(ds.date_day) = MONTH(CURRENT_DATE())
         THEN TRUE ELSE FALSE 
-    END AS is_current_month,
-    
-    -- Audit Fields
-    CURRENT_TIMESTAMP() AS dbt_updated_at
+    END AS is_current_month
     
 FROM date_spine ds
 LEFT JOIN game_dates gd ON ds.date_day = gd.game_date
