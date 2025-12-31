@@ -6,7 +6,7 @@
 
 -- Silver layer: Team game statistics fact table
 -- Grain: One row per team per game (two rows per game - home & away)
--- Contains aggregated team performance metrics including shots and shot attempts
+-- Contains aggregated team performance metrics including shots on goal and other stats
 
 WITH latest_snapshots AS (
     -- Get most recent snapshot for each game
