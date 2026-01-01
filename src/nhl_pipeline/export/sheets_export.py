@@ -39,10 +39,10 @@ def get_snowflake_connection() -> snowflake.connector.SnowflakeConnection:
         account=os.environ["SNOWFLAKE_ACCOUNT"],
         user=os.environ["SNOWFLAKE_USER"],
         password=os.environ["SNOWFLAKE_PASSWORD"],
-        database="NHL",
-        warehouse="NHL_WH",
-        schema="STAGING_SILVER",
-        role="ACCOUNTADMIN",
+        database=os.environ["SNOWFLAKE_DATABASE"],
+        warehouse=os.environ["SNOWFLAKE_WAREHOUSE"],
+        schema=os.environ["SNOWFLAKE_SCHEMA"],
+        role=os.environ["SNOWFLAKE_ROLE"],
     )
 
 
