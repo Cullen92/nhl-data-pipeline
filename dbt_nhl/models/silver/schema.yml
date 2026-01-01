@@ -76,6 +76,14 @@ models:
         description: Full team name combining place and common name
         tests:
           - not_null
+      - name: logo_url_light
+        description: Primary/light version of the team logo URL from the NHL CDN (SVG format)
+        tests:
+          - not_null
+      - name: logo_url_dark
+        description: Secondary/dark version of the team logo URL from the NHL CDN (SVG format)
+        tests:
+          - not_null
 
   - name: dim_player
     description: >
