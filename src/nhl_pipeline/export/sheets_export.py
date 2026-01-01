@@ -41,6 +41,7 @@ EXPORTS = [
     {"query": "SELECT * FROM NHL.STAGING_SILVER.TEAM_SHOT_METRICS", "sheet": "team_shot_metrics"},
     {"query": "SELECT * FROM NHL.STAGING_SILVER.DIM_PLAYER", "sheet": "dim_player"},
     {"query": "SELECT * FROM NHL.STAGING_SILVER.DIM_TEAM", "sheet": "dim_team"},
+    {"query": "SELECT * FROM NHL.STAGING_SILVER.FACT_PLAYER_GAME_STATS", "sheet": "fact_player_game_stats"},
 ]
 
 

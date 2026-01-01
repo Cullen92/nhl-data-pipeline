@@ -64,6 +64,14 @@ player_stats AS (
             WHEN '{{ combo.team_side }}' = 'home' THEN ls.home_team_id
             ELSE ls.away_team_id
         END AS team_id,
+        CASE 
+            WHEN '{{ combo.team_side }}' = 'home' THEN ls.away_team_id
+            ELSE ls.home_team_id
+        END AS opponent_team_id,
+        CASE 
+            WHEN '{{ combo.team_side }}' = 'home' THEN ls.away_team_abbrev
+            ELSE ls.home_team_abbrev
+        END AS opponent_team_abbrev,
         '{{ combo.team_side }}' AS home_away,
         
         -- Position
@@ -93,10 +101,12 @@ SELECT
     -- Foreign Keys
     ps.game_date AS date_key,
     ps.team_id,
+    ps.opponent_team_id,
     
     -- Context (denormalized for query performance)
     p.player_name,
     t.team_abbrev,
+    ps.opponent_team_abbrev,
     ps.home_away,
     ps.position_code,
     ps.position_type,
