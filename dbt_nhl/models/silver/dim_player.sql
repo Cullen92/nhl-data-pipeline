@@ -58,8 +58,8 @@ current_season AS (
     SELECT
         CASE 
             WHEN MONTH(CURRENT_DATE()) >= 10 
-            THEN CONCAT(YEAR(CURRENT_DATE()), YEAR(CURRENT_DATE()) + 1)
-            ELSE CONCAT(YEAR(CURRENT_DATE()) - 1, YEAR(CURRENT_DATE()))
+            THEN (YEAR(CURRENT_DATE()) * 10000) + (YEAR(CURRENT_DATE()) + 1)
+            ELSE ((YEAR(CURRENT_DATE()) - 1) * 10000) + YEAR(CURRENT_DATE())
         END AS season_code
 )
 
