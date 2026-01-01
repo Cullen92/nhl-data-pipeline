@@ -8,6 +8,17 @@ Setup:
 4. Share your Google Sheet with the service account email (editor access)
 5. Set GOOGLE_SHEET_ID env var to the Sheet ID (from the URL)
 
+Environment Variables:
+- SNOWFLAKE_ACCOUNT: Snowflake account identifier (required)
+- SNOWFLAKE_USER: Snowflake username (required)
+- SNOWFLAKE_PASSWORD: Snowflake password (required)
+- SNOWFLAKE_DATABASE: Database name (default: NHL)
+- SNOWFLAKE_WAREHOUSE: Warehouse name (default: NHL_WH)
+- SNOWFLAKE_SCHEMA: Schema name (default: STAGING_SILVER)
+- SNOWFLAKE_ROLE: Role name (default: ACCOUNTADMIN)
+- GOOGLE_SHEETS_CREDENTIALS: Path to service account JSON key file (optional)
+- GOOGLE_SHEET_ID: Google Sheets spreadsheet ID (required)
+
 Usage:
     python -m nhl_pipeline.export.sheets_export
 """
@@ -39,10 +50,10 @@ def get_snowflake_connection() -> snowflake.connector.SnowflakeConnection:
         account=os.environ["SNOWFLAKE_ACCOUNT"],
         user=os.environ["SNOWFLAKE_USER"],
         password=os.environ["SNOWFLAKE_PASSWORD"],
-        database="NHL",
-        warehouse="NHL_WH",
-        schema="STAGING_SILVER",
-        role="ACCOUNTADMIN",
+        database=os.environ.get("SNOWFLAKE_DATABASE", "NHL"),
+        warehouse=os.environ.get("SNOWFLAKE_WAREHOUSE", "NHL_WH"),
+        schema=os.environ.get("SNOWFLAKE_SCHEMA", "STAGING_SILVER"),
+        role=os.environ.get("SNOWFLAKE_ROLE", "ACCOUNTADMIN"),
     )
 
 
