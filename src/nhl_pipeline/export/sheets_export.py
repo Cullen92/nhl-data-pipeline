@@ -36,7 +36,7 @@ EXPORTS = [
 def get_snowflake_connection() -> snowflake.connector.SnowflakeConnection:
     """Create Snowflake connection using environment variables."""
     return snowflake.connector.connect(
-        account="XWOLWMN-IH17965",
+        account=os.environ["SNOWFLAKE_ACCOUNT"],
         user=os.environ["SNOWFLAKE_USER"],
         password=os.environ["SNOWFLAKE_PASSWORD"],
         database="NHL",
