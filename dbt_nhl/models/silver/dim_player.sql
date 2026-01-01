@@ -47,7 +47,10 @@ latest_player_team AS (
         team_id,
         team_abbrev
     FROM player_games
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY player_id ORDER BY game_date DESC) = 1
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY player_id
+        ORDER BY game_date DESC, team_id DESC, position_type, position_code
+    ) = 1
 ),
 
 -- Derive current season for headshot URL
