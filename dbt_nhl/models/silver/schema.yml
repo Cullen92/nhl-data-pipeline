@@ -415,7 +415,7 @@ models:
       Designed as a daily snapshot for prediction models and player performance analysis.
       Rolling averages are only shown if the player participated in most of the team's recent N games (allowing at most one missed game).
       Grain: One row per player per season per team (players who change teams mid-season have multiple rows).
-      Note: Excludes goalies - only includes forwards (F) and defensemen (D), inherited from fact_player_game_stats.
+      Note: Excludes goalies - only includes forwards (F) and defensemen (D), as sourced from fact_player_game_stats which filters to skaters only.
     columns:
       - name: season
         description: NHL season identifier (e.g., 20242025 for Oct 2024 - Jun 2025 season)
