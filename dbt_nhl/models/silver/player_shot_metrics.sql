@@ -172,25 +172,34 @@ season_totals AS (
 SELECT
     st.*,
     
-    -- Recent form: only show if player played in ALL of team's last N games
-    -- and team has played enough games for the window to be meaningful
-    CASE WHEN rm.games_in_team_last3 = LEAST(3, rm.team_total_games) AND rm.team_total_games >= 3
+    -- Recent form: show if player played in MOST of team's last N games
+    -- (allowing at most one missed game) and team has played enough games
+    CASE WHEN rm.team_total_games >= 3
+              AND rm.games_in_team_last3 >= LEAST(3, rm.team_total_games) - 1
         THEN ROUND(rm.shots_3game_avg, 2) END AS shots_last3_avg,
-    CASE WHEN rm.games_in_team_last3 = LEAST(3, rm.team_total_games) AND rm.team_total_games >= 3
+    CASE WHEN rm.team_total_games >= 3
+              AND rm.games_in_team_last3 >= LEAST(3, rm.team_total_games) - 1
         THEN ROUND(rm.goals_3game_avg, 2) END AS goals_last3_avg,
-    CASE WHEN rm.games_in_team_last3 = LEAST(3, rm.team_total_games) AND rm.team_total_games >= 3
+    CASE WHEN rm.team_total_games >= 3
+              AND rm.games_in_team_last3 >= LEAST(3, rm.team_total_games) - 1
         THEN ROUND(rm.points_3game_avg, 2) END AS points_last3_avg,
-    CASE WHEN rm.games_in_team_last5 = LEAST(5, rm.team_total_games) AND rm.team_total_games >= 5
+    CASE WHEN rm.team_total_games >= 5
+              AND rm.games_in_team_last5 >= LEAST(5, rm.team_total_games) - 1
         THEN ROUND(rm.shots_5game_avg, 2) END AS shots_last5_avg,
-    CASE WHEN rm.games_in_team_last5 = LEAST(5, rm.team_total_games) AND rm.team_total_games >= 5
+    CASE WHEN rm.team_total_games >= 5
+              AND rm.games_in_team_last5 >= LEAST(5, rm.team_total_games) - 1
         THEN ROUND(rm.goals_5game_avg, 2) END AS goals_last5_avg,
-    CASE WHEN rm.games_in_team_last5 = LEAST(5, rm.team_total_games) AND rm.team_total_games >= 5
+    CASE WHEN rm.team_total_games >= 5
+              AND rm.games_in_team_last5 >= LEAST(5, rm.team_total_games) - 1
         THEN ROUND(rm.points_5game_avg, 2) END AS points_last5_avg,
-    CASE WHEN rm.games_in_team_last10 = LEAST(10, rm.team_total_games) AND rm.team_total_games >= 10
+    CASE WHEN rm.team_total_games >= 10
+              AND rm.games_in_team_last10 >= LEAST(10, rm.team_total_games) - 1
         THEN ROUND(rm.shots_10game_avg, 2) END AS shots_last10_avg,
-    CASE WHEN rm.games_in_team_last10 = LEAST(10, rm.team_total_games) AND rm.team_total_games >= 10
+    CASE WHEN rm.team_total_games >= 10
+              AND rm.games_in_team_last10 >= LEAST(10, rm.team_total_games) - 1
         THEN ROUND(rm.goals_10game_avg, 2) END AS goals_last10_avg,
-    CASE WHEN rm.games_in_team_last10 = LEAST(10, rm.team_total_games) AND rm.team_total_games >= 10
+    CASE WHEN rm.team_total_games >= 10
+              AND rm.games_in_team_last10 >= LEAST(10, rm.team_total_games) - 1
         THEN ROUND(rm.points_10game_avg, 2) END AS points_last10_avg,
     
     -- Expose games played in recent stretch for transparency
