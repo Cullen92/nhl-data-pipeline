@@ -408,3 +408,173 @@ models:
         description: Shorthanded goals scored by team
         tests:
           - not_null
+
+  - name: player_shot_metrics
+    description: >
+      Analytics view aggregating player shot and scoring metrics by season with recent form indicators.
+      Designed as a daily snapshot for prediction models and player performance analysis.
+      Rolling averages are only shown if the player participated in most of the team's recent N games (allowing at most one missed game).
+      Grain: One row per player per season per team (players who change teams mid-season have multiple rows).
+    columns:
+      - name: season
+        description: NHL season identifier (e.g., 20242025 for Oct 2024 - Jun 2025 season)
+        tests:
+          - not_null
+      - name: player_id
+        description: NHL player identifier (foreign key to dim_player)
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_player')
+              field: player_id
+      - name: player_name
+        description: Player name (denormalized from dim_player)
+        tests:
+          - not_null
+      - name: team_id
+        description: Team identifier (foreign key to dim_team)
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_team')
+              field: team_id
+      - name: team_abbrev
+        description: Three-letter team abbreviation (denormalized from dim_team)
+        tests:
+          - not_null
+      - name: position_code
+        description: Specific position code (C, LW, RW, L, R, D)
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['C', 'LW', 'RW', 'L', 'R', 'D']
+      - name: position_type
+        description: Broader position grouping (F for forward, D for defense)
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['F', 'D']
+      - name: games_played
+        description: Number of games played by player for this team in this season
+        tests:
+          - not_null
+      - name: total_shots
+        description: Total shots on goal by player for this team in this season
+        tests:
+          - not_null
+      - name: total_goals
+        description: Total goals scored by player for this team in this season
+        tests:
+          - not_null
+      - name: total_assists
+        description: Total assists by player for this team in this season
+        tests:
+          - not_null
+      - name: total_points
+        description: Total points (goals + assists) by player for this team in this season
+        tests:
+          - not_null
+      - name: total_plus_minus
+        description: Total plus/minus rating accumulated by player for this team in this season
+        tests:
+          - not_null
+      - name: total_hits
+        description: Total hits delivered by player for this team in this season
+        tests:
+          - not_null
+      - name: total_blocked_shots
+        description: Total shots blocked by player for this team in this season
+        tests:
+          - not_null
+      - name: total_takeaways
+        description: Total takeaways (forced turnovers) by player for this team in this season
+        tests:
+          - not_null
+      - name: total_giveaways
+        description: Total giveaways (turnovers) by player for this team in this season
+        tests:
+          - not_null
+      - name: total_shifts
+        description: Total shifts played by player for this team in this season
+        tests:
+          - not_null
+      - name: total_pp_goals
+        description: Total power play goals scored by player for this team in this season
+        tests:
+          - not_null
+      - name: total_sh_goals
+        description: Total shorthanded goals scored by player for this team in this season
+        tests:
+          - not_null
+      - name: shots_per_game
+        description: Average shots on goal per game for the season
+        tests:
+          - not_null
+      - name: goals_per_game
+        description: Average goals scored per game for the season
+        tests:
+          - not_null
+      - name: assists_per_game
+        description: Average assists per game for the season
+        tests:
+          - not_null
+      - name: points_per_game
+        description: Average points (goals + assists) per game for the season
+        tests:
+          - not_null
+      - name: plus_minus_per_game
+        description: Average plus/minus rating per game for the season
+        tests:
+          - not_null
+      - name: hits_per_game
+        description: Average hits delivered per game for the season
+        tests:
+          - not_null
+      - name: blocked_shots_per_game
+        description: Average shots blocked per game for the season
+        tests:
+          - not_null
+      - name: takeaways_per_game
+        description: Average takeaways per game for the season
+        tests:
+          - not_null
+      - name: giveaways_per_game
+        description: Average giveaways per game for the season
+        tests:
+          - not_null
+      - name: faceoff_win_pct_avg
+        description: Average faceoff win percentage for the season (0.0 to 100.0, NULL for non-centers)
+      - name: shifts_per_game
+        description: Average shifts played per game for the season
+        tests:
+          - not_null
+      - name: shooting_pct
+        description: Shooting percentage for the season (goals / shots * 100, 0 if no shots)
+        tests:
+          - not_null
+      - name: shots_last3_avg
+        description: Average shots per game over team's last 3 games (NULL if player missed more than 1 of team's last 3 games or team has played fewer than 3 games)
+      - name: goals_last3_avg
+        description: Average goals per game over team's last 3 games (NULL if player missed more than 1 of team's last 3 games or team has played fewer than 3 games)
+      - name: points_last3_avg
+        description: Average points per game over team's last 3 games (NULL if player missed more than 1 of team's last 3 games or team has played fewer than 3 games)
+      - name: shots_last5_avg
+        description: Average shots per game over team's last 5 games (NULL if player missed more than 1 of team's last 5 games or team has played fewer than 5 games)
+      - name: goals_last5_avg
+        description: Average goals per game over team's last 5 games (NULL if player missed more than 1 of team's last 5 games or team has played fewer than 5 games)
+      - name: points_last5_avg
+        description: Average points per game over team's last 5 games (NULL if player missed more than 1 of team's last 5 games or team has played fewer than 5 games)
+      - name: shots_last10_avg
+        description: Average shots per game over team's last 10 games (NULL if player missed more than 1 of team's last 10 games or team has played fewer than 10 games)
+      - name: goals_last10_avg
+        description: Average goals per game over team's last 10 games (NULL if player missed more than 1 of team's last 10 games or team has played fewer than 10 games)
+      - name: points_last10_avg
+        description: Average points per game over team's last 10 games (NULL if player missed more than 1 of team's last 10 games or team has played fewer than 10 games)
+      - name: games_in_team_last3
+        description: Number of team's last 3 games in which player appeared (for transparency/debugging of rolling averages)
+      - name: games_in_team_last5
+        description: Number of team's last 5 games in which player appeared (for transparency/debugging of rolling averages)
+      - name: games_in_team_last10
+        description: Number of team's last 10 games in which player appeared (for transparency/debugging of rolling averages)
+      - name: team_total_games
+        description: Total number of games played by the team in this season (for context on rolling averages)
