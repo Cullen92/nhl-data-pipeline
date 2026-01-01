@@ -41,9 +41,9 @@ SELECT
     NULL AS division,
     -- Team logo URLs (NHL CDN)
     -- Primary/light version of the team logo from the NHL CDN, based on team abbreviation
-    CONCAT('https://assets.nhle.com/logos/nhl/svg/', team_abbrev, '_light.svg') AS logo_url_light,
+    CONCAT('https://assets.nhle.com/logos/nhl/svg/', COALESCE(team_abbrev, ''), '_light.svg') AS logo_url_light,
     -- Secondary/dark version of the team logo from the NHL CDN, based on team abbreviation
-    CONCAT('https://assets.nhle.com/logos/nhl/svg/', team_abbrev, '_dark.svg') AS logo_url_dark
+    CONCAT('https://assets.nhle.com/logos/nhl/svg/', COALESCE(team_abbrev, ''), '_dark.svg') AS logo_url_dark
 FROM team_data
 WHERE team_id IS NOT NULL
 ORDER BY team_id
