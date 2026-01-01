@@ -17,6 +17,8 @@ models:
           - not_null
       - name: ingest_ts
         description: Timestamp when data was ingested into Snowflake
+        tests:
+          - not_null
 
   - name: bronze_game_boxscore_snapshots
     description: >
