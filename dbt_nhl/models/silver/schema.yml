@@ -237,10 +237,21 @@ models:
           - relationships:
               to: ref('dim_team')
               field: team_id
+      - name: opponent_team_id
+        description: Foreign key to dim_team representing the opposing team
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_team')
+              field: team_id
       - name: player_name
         description: Player name (denormalized from dim_player)
       - name: team_abbrev
         description: Team abbreviation (denormalized from dim_team)
+      - name: opponent_team_abbrev
+        description: Team abbreviation of the opposing team (denormalized)
+        tests:
+          - not_null
       - name: home_away
         description: Whether player was on home or away team
         tests:
