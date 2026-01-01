@@ -74,12 +74,17 @@ def get_google_sheets_client() -> gspread.Client:
     """Authenticate with Google Sheets using service account."""
     creds_path = os.environ.get("GOOGLE_SHEETS_CREDENTIALS")
     if creds_path:
+        logger.info("Using Google Sheets credentials from GOOGLE_SHEETS_CREDENTIALS: %s", creds_path)
         return gspread.service_account(filename=creds_path)
-    else:
-        # Try default credentials location (~/.config/gspread/service_account.json)
-        return gspread.service_account()
 
-
+    logger.error(
+        "GOOGLE_SHEETS_CREDENTIALS is not set. Please set it to the path of your "
+        "service account JSON key file as described in this module's setup steps."
+    )
+    raise RuntimeError(
+        "Missing GOOGLE_SHEETS_CREDENTIALS environment variable required for Google "
+        "Sheets authentication."
+    )
 def export_to_sheet(
     gc: gspread.Client,
     spreadsheet_id: str,
