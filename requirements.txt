@@ -12,4 +12,7 @@ apache-airflow-providers-common-sql
 apache-airflow-providers-snowflake
 snowflake-connector-python
 dbt-snowflake
+gspread
+gspread-dataframe
+pandas
 -e .

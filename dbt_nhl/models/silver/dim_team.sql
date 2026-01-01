@@ -38,7 +38,10 @@ SELECT
     CONCAT(place_name, ' ', common_name) AS team_name,
     -- TODO: Add conference and division once we have that data source
     NULL AS conference,
-    NULL AS division
+    NULL AS division,
+    -- Team logo URLs (NHL CDN)
+    CONCAT('https://assets.nhle.com/logos/nhl/svg/', team_abbrev, '_light.svg') AS logo_url_light,
+    CONCAT('https://assets.nhle.com/logos/nhl/svg/', team_abbrev, '_dark.svg') AS logo_url_dark
 FROM team_data
 WHERE team_id IS NOT NULL
 ORDER BY team_id
