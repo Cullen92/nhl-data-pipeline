@@ -415,6 +415,7 @@ models:
       Designed as a daily snapshot for prediction models and player performance analysis.
       Rolling averages are only shown if the player participated in most of the team's recent N games (allowing at most one missed game).
       Grain: One row per player per season per team (players who change teams mid-season have multiple rows).
+      Note: Excludes goalies - only includes forwards (F) and defensemen (D), inherited from fact_player_game_stats.
     columns:
       - name: season
         description: NHL season identifier (e.g., 20242025 for Oct 2024 - Jun 2025 season)
@@ -443,13 +444,13 @@ models:
         tests:
           - not_null
       - name: position_code
-        description: Specific position code (C, LW, RW, L, R, D)
+        description: Specific position code (C, LW, RW, L, R, D) - excludes goalies as this view is for skaters only
         tests:
           - not_null
           - accepted_values:
               values: ['C', 'LW', 'RW', 'L', 'R', 'D']
       - name: position_type
-        description: Broader position grouping (F for forward, D for defense)
+        description: Broader position grouping (F for forward, D for defense) - excludes goalies as this view is for skaters only
         tests:
           - not_null
           - accepted_values:
