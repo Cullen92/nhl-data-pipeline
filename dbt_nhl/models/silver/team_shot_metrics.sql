@@ -30,13 +30,6 @@ rolling_averages AS (
     SELECT
         *,
         
-        -- 3-game rolling averages
-        AVG(shots_against) OVER (
-            PARTITION BY team_id, season 
-            ORDER BY game_date, game_id 
-            ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
-        ) AS shots_against_3game_avg,
-        
         -- 5-game rolling averages
         AVG(shots_for) OVER (
             PARTITION BY team_id, season 
@@ -102,9 +95,6 @@ SELECT
     save_pct,
     goals_for,
     goals_against,
-    
-    -- 3-game rolling averages
-    ROUND(shots_against_3game_avg, 2) AS shots_against_3game_avg,
     
     -- 5-game rolling averages
     ROUND(shots_for_5game_avg, 2) AS shots_for_5game_avg,
