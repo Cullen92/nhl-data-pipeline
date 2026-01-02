@@ -23,7 +23,7 @@ NHL API → Airflow (MWAA) → S3 (Data Lake) → Snowflake (Raw) → dbt (Bronz
 
 ## Data Lineage
 
-📊 **[View Interactive Lineage Graph](https://github.com/nhl-data-pipeline/nhl-data-pipeline)** (GitHub)
+📊 **[View Interactive Lineage Graph](https://nhl-data-pipeline.github.io/nhl-data-pipeline/)** (GitHub)
 
 ```mermaid
 flowchart TB
