@@ -143,3 +143,46 @@ dbt test --select fact_team_game_stats
 - The `team_shot_metrics` view only includes regular season games (game_type = 2) for cleaner statistical analysis
 - Rolling averages use `ROWS BETWEEN X PRECEDING AND CURRENT ROW` to include the current game
 - All percentages are stored as 0-100 scale (not 0-1)
+
+---
+
+## Future: Defensive Model Experimentation
+
+**Goal:** Use warehouse-native A/B testing (Eppo) to evaluate which shots-against model better predicts goals allowed.
+
+### Experiment Design
+
+| Variant | Model | Data Source |
+|---------|-------|-------------|
+| **Control** | Position-based | `team_shots_against_by_position.sql` — weights F vs D shots |
+| **Treatment** | Location-based | `fact_shot_events.sql` — zone weighting using x/y coordinates |
+
+### Control Model (Position-Based)
+Leverages existing logic: forwards generate ~65% of goals, so weight their shots higher.
+```
+Danger Score = (shots_against_forwards × 1.2) + (shots_against_defense × 0.8)
+```
+
+### Treatment Model (Location-Based)
+Divide offensive zone into danger zones using `x_coord`/`y_coord` from `fact_shot_events`:
+
+| Zone | Definition | Weight |
+|------|------------|--------|
+| Slot | \|x\| < 22, y > 69 | High (1.5×) |
+| Inner Circle | distance from goal < 25ft | Medium-High (1.3×) |
+| Point | y < 60 | Low (0.6×) |
+| Perimeter | everything else | Medium (1.0×) |
+
+### Eppo Integration
+- **Unit of randomization:** Games (or team-game pairs)
+- **Assignment:** 50/50 random split stored in Snowflake assignment table
+- **Primary metric:** Prediction error for goals against
+- **Secondary metrics:** Correlation with actual GA, win prediction accuracy
+
+### Prerequisites
+- [ ] Build zone classification logic in `fact_shot_events`
+- [ ] Create Eppo assignment table in Snowflake
+- [ ] Define prediction accuracy metrics in Eppo
+- [ ] Collect 2+ weeks of experiment data
+
+**Status:** Planned
