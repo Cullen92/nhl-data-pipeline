@@ -14,10 +14,52 @@ The short-term objective is to generate predictive reports for NHL players, spec
 - Integrate advanced visualization dashboards.
 - Implement ML/AI tooling for further analysis.
 - Playing with streaming datasets during live games.
+- **A/B Testing for Defensive Models:** Warehouse-native experimentation using Eppo to compare position-based vs location-based shots-against models for predicting goals allowed.
 
 ## Architecture Overview
 ```
 NHL API → Airflow (MWAA) → S3 (Data Lake) → Snowflake (Raw) → dbt (Bronze/Silver/Gold) → Analytics
+```
+
+## Data Lineage
+
+📊 **[View Interactive Lineage Graph](https://nhl-data-pipeline.github.io/nhl-data-pipeline/)** (GitHub)
+
+```mermaid
+flowchart TB
+    subgraph Sources["Data Sources"]
+        API[NHL API]
+    end
+    
+    subgraph Ingestion["Ingestion Layer"]
+        AF[Airflow DAGs]
+        S3[(S3 Data Lake)]
+    end
+    
+    subgraph Bronze["Bronze Layer"]
+        B1[bronze_schedule_snapshots]
+        B2[bronze_game_boxscore_snapshots]
+        B3[bronze_game_pbp_snapshots]
+    end
+    
+    subgraph Silver["Silver Layer"]
+        D1[dim_date]
+        D2[dim_team]
+        D3[dim_player]
+        F1[fact_game_results]
+        F2[fact_player_game_stats]
+        F3[fact_shot_events]
+        F4[fact_team_game_stats]
+        M1[team_shot_metrics]
+        M2[team_shots_against_by_position]
+    end
+    
+    API --> AF --> S3 --> B1 & B2 & B3
+    B1 --> D1
+    B2 --> D2 & D3 & F1 & F2 & F4
+    B3 --> F3
+    F4 --> M1
+    F2 --> M2
 ```
 
 ## Technology Stack
