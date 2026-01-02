@@ -6,7 +6,7 @@ This folder contains resources related to dbt documentation and data lineage.
 
 ### Live Site (GitHub Pages)
 Once enabled, dbt documentation is automatically deployed to GitHub Pages:
-- **URL**: `https://<username>.github.io/nhl-data-pipeline/`
+- **URL**: `https://nhl-data-pipeline.github.io/nhl-data-pipeline/`
 
 ### Local Development
 To view docs locally:
