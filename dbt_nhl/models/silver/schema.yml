@@ -756,3 +756,114 @@ models:
         description: Away team three-letter abbreviation
         tests:
           - not_null
+  - name: team_shots_against_by_position
+    description: >
+      Analytics view showing shots against each team broken down by shooter position (Forward vs Defense).
+      Includes rolling averages (3-game, 5-game, season) for trend analysis.
+      Grain: One row per team per game.
+      Shows defensive metrics - how many shots a team allowed from forwards vs defensemen.
+      Filtered to regular season games only (game_type = 2).
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - game_id
+            - team_id
+    columns:
+      - name: game_id
+        description: NHL game identifier (part of composite primary key)
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fact_game_results')
+              field: game_id
+      - name: game_date
+        description: Date of the game (foreign key to dim_date)
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: team_id
+        description: Team identifier for the defensive team (part of composite primary key, foreign key to dim_team)
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_team')
+              field: team_id
+      - name: team_abbrev
+        description: Three-letter team abbreviation (denormalized from dim_team)
+        tests:
+          - not_null
+      - name: team_name
+        description: Full team name (denormalized from dim_team)
+        tests:
+          - not_null
+      - name: season
+        description: NHL season identifier (e.g., 20242025 for 2024-2025 season)
+        tests:
+          - not_null
+      - name: home_away
+        description: Whether team was home or away
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['home', 'away']
+      - name: result
+        description: Game result from team perspective (W=Win, L=Loss)
+        tests:
+          - accepted_values:
+              values: ['W', 'L']
+      - name: shots_against_forwards
+        description: Number of shots against this team taken by opposing forwards in this game
+        tests:
+          - not_null
+      - name: shots_against_defense
+        description: Number of shots against this team taken by opposing defensemen in this game
+        tests:
+          - not_null
+      - name: total_shots_against
+        description: Total shots against this team in this game (sum of forward and defense shots)
+        tests:
+          - not_null
+      - name: pct_shots_against_from_forwards
+        description: Percentage of shots against from forwards (0.0 to 100.0)
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+              inclusive: true
+      - name: pct_shots_against_from_defense
+        description: Percentage of shots against from defensemen (0.0 to 100.0)
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+              inclusive: true
+      - name: shots_against_forwards_3game_avg
+        description: Rolling 3-game average of shots against from forwards
+        tests:
+          - not_null
+      - name: shots_against_defense_3game_avg
+        description: Rolling 3-game average of shots against from defensemen
+        tests:
+          - not_null
+      - name: shots_against_forwards_5game_avg
+        description: Rolling 5-game average of shots against from forwards
+        tests:
+          - not_null
+      - name: shots_against_defense_5game_avg
+        description: Rolling 5-game average of shots against from defensemen
+        tests:
+          - not_null
+      - name: shots_against_forwards_season_avg
+        description: Season-to-date average of shots against from forwards
+        tests:
+          - not_null
+      - name: shots_against_defense_season_avg
+        description: Season-to-date average of shots against from defensemen
+        tests:
+          - not_null
+      - name: games_played_in_season
+        description: Number of games played by this team in the season up to and including this game
+        tests:
+          - not_null
