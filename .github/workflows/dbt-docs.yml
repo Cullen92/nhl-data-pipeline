@@ -40,18 +40,16 @@ jobs:
       - name: Install dbt packages
         working-directory: dbt_nhl
         env:
-          SNOWFLAKE_USER: "docs_ci"
-          SNOWFLAKE_PASSWORD: "not_used"
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
         run: dbt deps
 
-      - name: Generate dbt docs (no database connection needed)
+      - name: Generate dbt docs
         working-directory: dbt_nhl
         env:
-          SNOWFLAKE_USER: "docs_ci"
-          SNOWFLAKE_PASSWORD: "not_used"
-        run: |
-          # Generate docs with empty catalog (no DB connection needed)
-          dbt docs generate --empty-catalog
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+        run: dbt docs generate
 
       - name: Prepare docs for GitHub Pages
         run: |
