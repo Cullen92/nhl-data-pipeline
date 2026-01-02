@@ -396,4 +396,82 @@ QUALIFY ROW_NUMBER() OVER (
 
 ---
 
+## 2026-01-02: Warehouse-Native A/B Testing with Eppo (Planned)
+
+**Status:** Planned
+
+**Context:** Evaluating tools for A/B testing experience (Amplitude Experiment, Optimizely, StatSig, LaunchDarkly, Eppo). Need to demonstrate experimentation skills in a data engineering context, not a traditional product context.
+
+**Decision:** Plan integration with **Eppo** for warehouse-native experimentation to compare defensive analysis models (shots against).
+
+**Experiment Concept:**
+- **Control:** Position-based model (F vs D shot weighting from `team_shots_against_by_position`)
+- **Treatment:** Location-based model (zone weighting from `fact_shot_events` x/y coordinates)
+- **Metric:** Which model better predicts goals against?
+
+**Alternatives Considered:**
+- Amplitude/Optimizely: More product-focused, less natural fit for data pipelines
+- LaunchDarkly: Good for feature flags but not true experimentation
+- StatSig: Has warehouse integrations but Eppo is more SQL-native
+- xG experimentation: Considered but SOG analysis aligns better with existing work
+
+**Why Eppo:**
+- Warehouse-native (connects directly to Snowflake)
+- SQL-based metric definitions (fits dbt workflow)
+- Designed for analytics engineering teams
+- Free tier available for evaluation
+
+**Consequences:**
+- Positive: Genuine experimentation use case tied to existing shot analysis
+- Positive: Demonstrates modern A/B testing tooling in data engineering context
+- Positive: No changes to existing models required (additive)
+- Negative: Requires Eppo account setup and Snowflake connection
+- Negative: Needs sufficient game data for statistical significance
+
+**Implementation Notes:**
+See `dbt_nhl/TEAM_SHOTS_README.md` for detailed experiment design and prerequisites.
+
+---
+
+## 2026-01-02: GitHub Pages for dbt Documentation & Lineage
+
+**Status:** Accepted
+
+**Context:** Need to showcase data lineage publicly in GitHub repo. dbt generates interactive documentation with lineage graphs, but `target/` is correctly gitignored (contains ephemeral build artifacts).
+
+**Decision:** Deploy dbt docs to GitHub Pages via automated GitHub Actions workflow.
+
+**Implementation:**
+- New workflow: `.github/workflows/dbt-docs.yml`
+- Triggers on push to `main` when `dbt_nhl/**` changes
+- Generates docs and deploys to GitHub Pages
+- Manual trigger available via `workflow_dispatch`
+
+**What's Showcased:**
+- Interactive lineage graph (model → model dependencies)
+- Column-level documentation from `schema.yml`
+- Test coverage and data quality indicators
+- SQL code for all models
+
+**Alternatives Considered:**
+- Commit `target/` folder: Bloats repo, stale artifacts
+- Manual screenshots: Not interactive, goes stale
+- External hosting (Netlify): Adds dependency, GitHub Pages is free
+- dbt Cloud: Would provide column-level lineage but costs $$$
+
+**Consequences:**
+- Positive: Public, interactive lineage accessible via URL
+- Positive: Auto-updates on merge to main
+- Positive: Demonstrates CI/CD and documentation practices
+- Positive: Zero cost (GitHub Pages is free)
+- Negative: Requires GitHub Pages to be enabled in repo settings
+- Negative: No column-level lineage (dbt Cloud feature)
+
+**Setup Required:**
+1. Go to repo **Settings** → **Pages**
+2. Set Source to "GitHub Actions"
+3. Push changes to trigger first deployment
+
+---
+
 <!-- Add new decisions above this line -->
