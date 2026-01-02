@@ -43,11 +43,6 @@ jobs:
 
       - name: Generate dbt docs (no database connection needed)
         working-directory: dbt_nhl
-        env:
-          # Dummy credentials - docs generate doesn't need real connection
-          # when using --no-compile flag
-          SNOWFLAKE_USER: "docs_generator"
-          SNOWFLAKE_PASSWORD: "not_used"
         run: |
           # Generate docs without compiling (uses cached manifest if available)
           # For full docs, we'd need real credentials, but static docs work fine
