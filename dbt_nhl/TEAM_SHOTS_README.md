@@ -168,7 +168,7 @@ Divide offensive zone into danger zones using `x_coord`/`y_coord` from `fact_sho
 
 | Zone | Definition | Weight |
 |------|------------|--------|
-| Slot | \|x\| < 22, y > 69 | High (1.5×) |
+| Slot | x_coord between -22 and 22, and y_coord > 69 | High (1.5×) |
 | Inner Circle | distance from goal < 25ft | Medium-High (1.3×) |
 | Point | y < 60 | Low (0.6×) |
 | Perimeter | everything else | Medium (1.0×) |
