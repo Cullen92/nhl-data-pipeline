@@ -599,6 +599,163 @@ models:
       - name: team_total_games
         description: Total number of games played by the team in this season (for context on rolling averages)
 
+  - name: fact_shot_events
+    description: >
+      Shot events fact table with one row per shot event (shots on goal, missed shots, goals).
+      Contains shot coordinates for heatmap and location analysis.
+      Links to shooter (player) and both teams (shooting and defending).
+      Grain: game_id + event_id (one row per shot event in a game).
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - game_id
+            - event_id
+    columns:
+      - name: game_id
+        description: NHL game identifier (part of composite primary key)
+        tests:
+          - not_null
+      - name: event_id
+        description: Play-by-play event identifier within the game (part of composite primary key)
+        tests:
+          - not_null
+      - name: game_date
+        description: Date when the game was played
+        tests:
+          - not_null
+      - name: season
+        description: NHL season identifier (e.g., 20242025 for 2024-2025 season)
+        tests:
+          - not_null
+      - name: game_type
+        description: Type of game (1 = Preseason, 2 = Regular Season, 3 = Playoffs, 4 = All-Star)
+        tests:
+          - not_null
+      - name: period
+        description: Period number when shot occurred
+        tests:
+          - not_null
+      - name: period_type
+        description: Type of period (REG = regulation, OT = overtime, SO = shootout)
+        tests:
+          - not_null
+      - name: time_in_period
+        description: Time elapsed in the period when shot occurred (MM:SS format)
+        tests:
+          - not_null
+      - name: time_remaining
+        description: Time remaining in the period when shot occurred (MM:SS format)
+        tests:
+          - not_null
+      - name: x_coord
+        description: X coordinate of shot location in feet (origin is center ice, positive towards attacking goal)
+      - name: y_coord
+        description: Y coordinate of shot location in feet (origin is center ice)
+      - name: shooter_player_id
+        description: Player identifier of the shooter (foreign key to dim_player)
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_player')
+              field: player_id
+      - name: shooter_name
+        description: Player name of the shooter (denormalized from dim_player)
+      - name: shooter_position_code
+        description: Specific position code of the shooter (C, LW, RW, L, R, D)
+        tests:
+          - accepted_values:
+              values: ['C', 'LW', 'RW', 'L', 'R', 'D']
+      - name: shooter_position_type
+        description: Broader position grouping of the shooter (F for forward, D for defense)
+        tests:
+          - accepted_values:
+              values: ['F', 'D']
+      - name: shooting_team_id
+        description: Team identifier of the team taking the shot (foreign key to dim_team)
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_team')
+              field: team_id
+      - name: shooter_home_away
+        description: Whether shooter was on home or away team
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['home', 'away']
+      - name: defending_team_id
+        description: Team identifier of the team defending against the shot (foreign key to dim_team)
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_team')
+              field: team_id
+      - name: goalie_id
+        description: Goalie identifier who faced the shot (NULL for missed shots, foreign key to dim_player)
+        tests:
+          - relationships:
+              to: ref('dim_player')
+              field: player_id
+      - name: event_type
+        description: Original NHL API event type for the shot
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['shot-on-goal', 'goal', 'missed-shot']
+      - name: shot_result
+        description: Simplified shot outcome classification
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['goal', 'saved', 'missed']
+      - name: shot_type
+        description: Type of shot taken (e.g., Wrist Shot, Slap Shot, Snap Shot, Backhand, Tip-In, Deflected, Wrap-around)
+      - name: miss_reason
+        description: Reason for missed shot (NULL for shots on goal and goals)
+      - name: is_goal
+        description: Boolean indicator (1 = goal, 0 = not a goal)
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: assist1_player_id
+        description: Player identifier for primary assist on goal (NULL for non-goals, foreign key to dim_player)
+        tests:
+          - relationships:
+              to: ref('dim_player')
+              field: player_id
+      - name: assist2_player_id
+        description: Player identifier for secondary assist on goal (NULL for non-goals, foreign key to dim_player)
+        tests:
+          - relationships:
+              to: ref('dim_player')
+              field: player_id
+      - name: home_score_after
+        description: Home team score after this shot (NULL for non-goals)
+      - name: away_score_after
+        description: Away team score after this shot (NULL for non-goals)
+      - name: home_team_id
+        description: Home team identifier (foreign key to dim_team)
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_team')
+              field: team_id
+      - name: home_team_abbrev
+        description: Home team three-letter abbreviation
+        tests:
+          - not_null
+      - name: away_team_id
+        description: Away team identifier (foreign key to dim_team)
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_team')
+              field: team_id
+      - name: away_team_abbrev
+        description: Away team three-letter abbreviation
+        tests:
+          - not_null
   - name: team_shots_against_by_position
     description: >
       Analytics view showing shots against each team broken down by shooter position (Forward vs Defense).

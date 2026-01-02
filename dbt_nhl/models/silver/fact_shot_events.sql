@@ -176,4 +176,3 @@ SELECT
 
 FROM enriched
 WHERE game_type = 2  -- Regular season only (remove to include playoffs/preseason)
-ORDER BY game_date DESC, game_id, period, time_in_period
