@@ -46,7 +46,7 @@ jobs:
         run: |
           # Generate docs without compiling (uses cached manifest if available)
           # For full docs, we'd need real credentials, but static docs work fine
-          dbt docs generate --no-compile || dbt docs generate --empty-catalog
+          dbt docs generate --no-compile || dbt docs generate --empty
 
       - name: Prepare docs for GitHub Pages
         run: |
