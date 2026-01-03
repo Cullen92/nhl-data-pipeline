@@ -44,3 +44,15 @@ dbt-run:
 
 dbt-run-export: dbt-run export-sheets
 	@echo "dbt run and Google Sheets export complete!"
+
+export-tableau:
+	@echo "Exporting shot location data for Tableau heatmaps..."
+	@source ./.env && $(PYTHON) -m nhl_pipeline.export.tableau_export
+
+export-tableau-full:
+	@echo "Exporting all shot data for Tableau (including raw events)..."
+	@source ./.env && $(PYTHON) -m nhl_pipeline.export.tableau_export --include-raw
+
+generate-rink:
+	@echo "Generating NHL rink background image..."
+	@$(PYTHON) -m nhl_pipeline.export.generate_rink_image
