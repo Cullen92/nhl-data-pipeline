@@ -65,6 +65,9 @@ with DAG(
         logger.info(f"Fetching previous week schedule ({prev_week_date})...")
         prev_schedule_snapshot = fetch_schedule(url=prev_week_url)
         logger.info("✓ Fetched previous week schedule")
+        prev_schedule_uri = upload_snapshot_to_s3(prev_schedule_snapshot, partition_dt=prev_week_date)
+        logger.info(f"✓ Uploaded previous week schedule snapshot: {prev_schedule_uri}")
+        print(f"Uploaded previous week schedule snapshot: {prev_schedule_uri}")
 
         # 2. Extract Games from both schedules
         # We look back 7 days to ensure we catch any updates to recent games.
