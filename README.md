@@ -2,6 +2,15 @@
 
 A production-grade data platform for NHL game analytics, featuring automated ingestion, medallion architecture transformation, and dimensional modeling for advanced statistics and player performance analysis.
 
+## 🏒 Live Dashboard
+
+[![Bruins Shot Analytics Dashboard](docs/images/SOGsReport.png)](https://public.tableau.com/app/profile/cullen.mcelroy/viz/BruinsShotsonGoalSummary/BruinsPlayerShotSummary)
+
+**[📊 View Live Dashboard on Tableau Public →](https://public.tableau.com/app/profile/cullen.mcelroy/viz/BruinsShotsonGoalSummary/BruinsPlayerShotSummary)**
+
+*Auto-refreshing player shot analysis with rink heatmaps, opponent scouting, and performance trends.*
+---
+
 ## Project Overview
 This project is a comprehensive data engineering pipeline designed to ingest, process, and analyze NHL game data. 
 
@@ -72,7 +81,7 @@ This project serves as a practical playground for mastering modern data engineer
 *   **Data Warehousing:** Snowflake
 *   **Transformation:** dbt (Data Build Tool)
 *   **Processing:** PySpark (planned)
-*   **Visualization:** Looker / Tableau (planned)
+*   **Visualization:** Tableau Public (with Google Sheets auto-refresh)
 
 ## Architecture & Infrastructure
 

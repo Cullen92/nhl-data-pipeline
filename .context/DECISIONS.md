@@ -474,4 +474,46 @@ See `dbt_nhl/TEAM_SHOTS_README.md` for detailed experiment design and prerequisi
 
 ---
 
+## 2026-01-03: Tableau Public Limitations and Bruins-Only Focus
+
+**Status:** Accepted
+
+**Context:** Attempted to use Tableau Public with Google Sheets as the data source for automatic daily refresh. Encountered significant limitations:
+- Tables with 48K+ rows cause "insufficient permissions" errors via Google Sheets
+- CSV files embed data in workbook, requiring manual republish to update
+- No REST API for programmatic refresh (unlike Tableau Server/Cloud)
+
+**Decision:** 
+1. **Short-term:** Focus exclusively on Boston Bruins data to stay within Google Sheets row limits (~25K rows max)
+2. **Long-term:** Evaluate alternative visualization tools that support direct Snowflake connections and scheduled refresh
+
+**Bruins-specific models created:**
+- `bruins_player_shot_locations` — Player shot heatmap data
+- `bruins_team_shot_locations` — Team-level shot heatmap data
+- `bruins_shot_events` — Individual shot events
+- `bruins_next_opponent` — Auto-updating next game opponent info
+- `bruins_opponent_shot_locations` — Opponent tendencies for scouting
+
+**Alternatives Considered:**
+- Full league data in Tableau: Rejected due to Google Sheets row limits
+- CSV-only approach: Rejected due to no automatic refresh capability
+- Immediate migration to Streamlit: Deferred to complete Phase 1 first
+
+**Future Tool Candidates:**
+| Tool | Cost | Auto-Refresh | Custom Viz | Notes |
+|------|------|--------------|------------|-------|
+| Streamlit | Free | ✅ Direct Snowflake | ✅ Full Python | Growing in DE community |
+| Looker Studio | Free | ✅ Via connectors | ⚠️ Limited | Google ecosystem |
+| Apache Superset | Free (self-host) | ✅ Scheduled | ⚠️ Limited | Used by Airbnb, Dropbox |
+| Metabase | Free (self-host) | ✅ Scheduled | ⚠️ Limited | Easy setup |
+
+**Consequences:**
+- Positive: Bruins-focused dashboard works with automatic refresh
+- Positive: Smaller data volumes = faster queries and lower Snowflake costs
+- Positive: Clear path to evaluate better tools in Phase 2
+- Negative: Dashboard limited to single team analysis
+- Negative: Full league analysis requires manual CSV workflow
+
+---
+
 <!-- Add new decisions above this line -->
