@@ -47,23 +47,30 @@ with DAG(
         
         logger.info(f"=== Starting NHL Daily Ingestion for execution date: {ts} ===")
         
-        # 1. Fetch Schedule (schedule/now)
-        # This typically returns the current week's schedule (e.g. Mon-Sun)
-        logger.info("Fetching schedule from NHL API...")
+        # Parse execution date
+        dt = parse_airflow_ts(ts)
+        
+        # 1. Fetch Schedule (schedule/now + previous week)
+        # schedule/now returns the current week's schedule (Mon-Sun)
+        # We also fetch the previous week to catch games that finished after the week rolled over
+        logger.info("Fetching current week schedule from NHL API...")
         schedule_snapshot = fetch_schedule()
         schedule_uri = upload_snapshot_to_s3(schedule_snapshot, partition_dt=ts)
         logger.info(f"✓ Uploaded schedule snapshot: {schedule_uri}")
         print(f"Uploaded schedule snapshot: {schedule_uri}")
-
-        # 2. Extract Games
-        # We look back 7 days to ensure we catch any updates to recent games within the returned schedule window.
-        # Note: 'schedule/now' returns a limited window. To look back further (e.g. start of season),
-        # you must use the backfill DAG which iterates through specific dates.
-        logger.info("Extracting game IDs from schedule...")
-        payload = schedule_snapshot.get("payload")
         
-        # Parse execution date
-        dt = parse_airflow_ts(ts)
+        # Fetch previous week's schedule to catch games that rolled off
+        prev_week_date = (dt - timedelta(days=7)).strftime("%Y-%m-%d")
+        prev_week_url = f"https://api-web.nhle.com/v1/schedule/{prev_week_date}"
+        logger.info(f"Fetching previous week schedule ({prev_week_date})...")
+        prev_schedule_snapshot = fetch_schedule(url=prev_week_url)
+        logger.info("✓ Fetched previous week schedule")
+
+        # 2. Extract Games from both schedules
+        # We look back 7 days to ensure we catch any updates to recent games.
+        logger.info("Extracting game IDs from schedules...")
+        payload = schedule_snapshot.get("payload")
+        prev_payload = prev_schedule_snapshot.get("payload")
             
         game_ids = extract_game_ids(
             payload,
@@ -72,13 +79,25 @@ with DAG(
             only_final=True,
         )
         
-        logger.info(f"✓ Found {len(game_ids)} FINAL games in the current schedule window (lookback: 7 days)")
-        print(f"Found {len(game_ids)} FINAL games in the current schedule window")
+        # Also extract from previous week's schedule
+        prev_game_ids = extract_game_ids(
+            prev_payload,
+            partition_dt=dt,
+            lookback_days=7,
+            only_final=True,
+        )
+        
+        # Combine and dedupe
+        all_game_ids = list(set(game_ids + prev_game_ids))
+        all_game_ids.sort()
+        
+        logger.info(f"✓ Found {len(all_game_ids)} FINAL games (current week: {len(game_ids)}, prev week: {len(prev_game_ids)})")
+        print(f"Found {len(all_game_ids)} FINAL games in combined schedule window")
 
         # 3. Ingest Games
-        logger.info(f"Starting game ingestion for {len(game_ids)} games...")
-        for idx, game_id in enumerate(game_ids, 1):
-            logger.info(f"Processing game {idx}/{len(game_ids)}: {game_id}")
+        logger.info(f"Starting game ingestion for {len(all_game_ids)} games...")
+        for idx, game_id in enumerate(all_game_ids, 1):
+            logger.info(f"Processing game {idx}/{len(all_game_ids)}: {game_id}")
             
             # Fetch and upload Boxscore
             box = fetch_game_boxscore(game_id)
@@ -100,7 +119,7 @@ with DAG(
             if sleep_s > 0:
                 time.sleep(sleep_s)
         
-        logger.info(f"=== Completed NHL Daily Ingestion: {len(game_ids)} games processed ===")
+        logger.info(f"=== Completed NHL Daily Ingestion: {len(all_game_ids)} games processed ===")
 
     task_ingest_daily = PythonOperator(
         task_id="ingest_daily",

@@ -18,10 +18,11 @@ WITH shot_data AS (
         shooting_team_id,
         season,
         
-        -- Bin coordinates into 2-foot cells for manageable aggregation
-        -- NHL rink: 200ft x 85ft, center ice at (0,0)
-        ROUND(x_coord_normalized / 2) * 2 AS x_bin,
-        ROUND(y_coord_normalized / 2) * 2 AS y_bin,
+        -- Bin coordinates into 5-foot cells for filled heatmap visualization
+        -- NHL API: x = -100 to 100 (length), y = -42.5 to 42.5 (width)
+        -- Use ABS(x_coord) to normalize all shots to offensive zone (0 to 100)
+        ROUND(ABS(x_coord) / 5) * 5 AS x_bin,
+        ROUND(y_coord / 5) * 5 AS y_bin,
         
         shot_result,
         is_goal,
