@@ -93,7 +93,7 @@ To maintain code quality and ensure reliable deployments, the project utilizes a
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| **CI** | Push/PR to `main`, `develop` | Linting (`ruff`) and unit tests (`pytest`) |
+| **CI** | Push/PR to `main`, `develop` | Linting (`ruff`) and unit tests (`pytest`, currently non-blocking/soft-failing; failures do not yet fail the CI run) |
 | **Deploy to MWAA** | Push to `main` | Syncs DAGs, plugins, and dbt project to S3 for MWAA |
 | **dbt Docs** | Push to `main` (dbt changes) | Generates and deploys dbt documentation to GitHub Pages |
 | **Data Quality Validation** | After MWAA deploy + every 4 hours | Runs Snowflake Time Travel validation checks |
