@@ -87,14 +87,26 @@ The project leverages AWS for scalable storage and security:
 *   **Future State:** A formal promotion strategy (Dev &rarr; Stage &rarr; Prod) is planned to ensure reliability and data quality.
 
 ## CI/CD & Quality Assurance
-To maintain code quality and ensure reliable deployments, the project utilizes a structured CI/CD pipeline:
+To maintain code quality and ensure reliable deployments, the project utilizes a structured CI/CD pipeline with multiple GitHub Actions workflows:
 
-*   **GitHub Actions:** Automated workflows trigger on pull requests and pushes to `main` and `develop` branches.
-    *   **Linting:** Code is checked with `ruff` to enforce style guidelines.
-    *   **Testing:** Unit tests are executed via `pytest` to verify ingestion logic.
-*   **Pull Request Process:**
-    *   All changes require a Pull Request (PR) to be merged.
-    *   **AI-Assisted Development:** Leveraging AI coding assistants (GitHub Copilot, multiple LLMs) as pair programming tools to accelerate development while maintaining code quality through testing and reviews.
+### GitHub Actions Workflows
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| **CI** | Push/PR to `main`, `develop` | Linting (`ruff`) and unit tests (`pytest`) |
+| **Deploy to MWAA** | Push to `main` | Syncs DAGs, plugins, and dbt project to S3 for MWAA |
+| **dbt Docs** | Push to `main` (dbt changes) | Generates and deploys dbt documentation to GitHub Pages |
+| **Data Quality Validation** | Post-deploy + every 4 hours | Runs Snowflake Time Travel validation checks |
+
+### Development Process
+*   **Branching Strategy:** Feature branches → `develop` → `main` (production)
+*   **Pull Request Process:** All changes require a PR with passing CI checks
+*   **AI-Assisted Development:** Leveraging AI coding assistants (GitHub Copilot, Claude) as pair programming tools to accelerate development while maintaining code quality through testing and reviews
+
+### Automated Deployments
+*   **MWAA Sync:** DAGs, plugins, and requirements automatically deploy to AWS MWAA on merge to `main`
+*   **dbt Project:** Transformed models sync to S3 for scheduled dbt runs
+*   **Documentation:** dbt docs auto-publish to GitHub Pages for interactive lineage exploration
 
 ## Data Quality & Observability
 Robust data quality practices ensure reliable analytics:
