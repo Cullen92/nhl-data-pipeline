@@ -8,7 +8,7 @@ CREATE SCHEMA IF NOT EXISTS NHL.RAW_ODDS;
 -- Note: Uses the same storage integration as the NHL data
 CREATE OR REPLACE STAGE NHL.RAW_ODDS.ODDS_S3_STAGE
     STORAGE_INTEGRATION = S3_NHL_INTEGRATION  -- Update if your integration has a different name
-    URL = 's3://nhl-data-pipeline-cullenm-dev/raw/odds/'
+    URL = 's3://{{ env_var("ODDS_S3_BUCKET") }}/raw/odds/'
     FILE_FORMAT = (TYPE = JSON);
 
 -- 3. Create table for player props
