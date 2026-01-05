@@ -39,14 +39,17 @@ jobs:
 
       - name: Install dbt packages
         working-directory: dbt_nhl
+        env:
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
         run: dbt deps
 
-      - name: Generate dbt docs (no database connection needed)
+      - name: Generate dbt docs
         working-directory: dbt_nhl
-        run: |
-          # Generate docs without compiling (uses cached manifest if available)
-          # For full docs, we'd need real credentials, but static docs work fine
-          dbt docs generate --no-compile || dbt docs generate --empty
+        env:
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+        run: dbt docs generate
 
       - name: Prepare docs for GitHub Pages
         run: |

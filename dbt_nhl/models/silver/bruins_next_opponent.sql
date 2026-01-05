@@ -1,8 +1,8 @@
 {{
-  config(
-    materialized='table',
-    tags=['silver', 'bruins']
-  )
+    config(
+        materialized='table',
+        tags=['silver', 'bruins', 'tableau']
+    )
 }}
 
 -- Find the Bruins' next upcoming game and opponent

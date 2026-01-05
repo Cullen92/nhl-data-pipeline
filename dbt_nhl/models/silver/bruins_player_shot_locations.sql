@@ -1,8 +1,8 @@
 {{
-  config(
-    materialized='table',
-    tags=['silver', 'bruins']
-  )
+    config(
+        materialized='table',
+        tags=['silver', 'bruins', 'tableau']
+    )
 }}
 
 -- Bruins-only player shot locations for Tableau Public (Google Sheets size limit)

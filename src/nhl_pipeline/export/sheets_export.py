@@ -44,12 +44,16 @@ EXPORTS = [
     {"query": "SELECT * FROM NHL.STAGING_SILVER.FACT_PLAYER_GAME_STATS", "sheet": "fact_player_game_stats"},
     {"query": "SELECT * FROM NHL.STAGING_SILVER.TEAM_SHOTS_AGAINST_BY_POSITION", "sheet": "team_shots_against_by_position"},
     {"query": "SELECT * FROM NHL.STAGING_SILVER.FACT_SHOT_EVENTS", "sheet": "fact_shot_events"},
-    # Bruins-specific tables for Tableau
-    {"query": "SELECT * FROM NHL.STAGING_SILVER.BRUINS_NEXT_OPPONENT", "sheet": "bruins_next_opponent"},
-    {"query": "SELECT * FROM NHL.STAGING_SILVER.BRUINS_SHOT_EVENTS", "sheet": "bruins_shot_events"},
-    {"query": "SELECT * FROM NHL.STAGING_SILVER.BRUINS_TEAM_SHOT_LOCATIONS", "sheet": "bruins_team_shot_locations"},
+    # Bruins-only views for Tableau Public heatmap (small enough for Google Sheets)
     {"query": "SELECT * FROM NHL.STAGING_SILVER.BRUINS_PLAYER_SHOT_LOCATIONS", "sheet": "bruins_player_shot_locations"},
+    {"query": "SELECT * FROM NHL.STAGING_SILVER.BRUINS_TEAM_SHOT_LOCATIONS", "sheet": "bruins_team_shot_locations"},
+    {"query": "SELECT * FROM NHL.STAGING_SILVER.BRUINS_SHOT_EVENTS", "sheet": "bruins_shot_events"},
+    # Next opponent data - automatically updates based on schedule
+    {"query": "SELECT * FROM NHL.STAGING_SILVER.BRUINS_NEXT_OPPONENT", "sheet": "bruins_next_opponent"},
     {"query": "SELECT * FROM NHL.STAGING_SILVER.BRUINS_OPPONENT_SHOT_LOCATIONS", "sheet": "bruins_opponent_shot_locations"},
+    # Commented out - too large for Tableau Public Google Sheets connection, use CSV instead
+    # {"query": "SELECT * FROM NHL.STAGING_SILVER.PLAYER_SHOT_LOCATIONS", "sheet": "player_shot_locations"},
+    # {"query": "SELECT * FROM NHL.STAGING_SILVER.TEAM_SHOT_LOCATIONS", "sheet": "team_shot_locations"},
 ]
 
 
@@ -80,55 +84,20 @@ def query_to_dataframe(conn: snowflake.connector.SnowflakeConnection, query: str
 
 
 def get_google_sheets_client() -> gspread.Client:
-    """Authenticate with Google Sheets using service account.
-    
-    Supports multiple credential sources:
-    1. GOOGLE_SHEETS_CREDENTIALS env var pointing to a JSON file path (local dev)
-    2. GOOGLE_SHEETS_CREDENTIALS_JSON env var containing raw JSON content (MWAA)
-    3. Airflow Variable 'GOOGLE_SHEETS_CREDENTIALS' containing raw JSON content (MWAA)
-    """
-    import json
-    import tempfile
-    
-    # Option 1: File path (local development)
+    """Authenticate with Google Sheets using service account."""
     creds_path = os.environ.get("GOOGLE_SHEETS_CREDENTIALS")
-    if creds_path and os.path.exists(creds_path):
-        logger.info("Using Google Sheets credentials from file: %s", creds_path)
+    if creds_path:
+        logger.info("Using Google Sheets credentials from GOOGLE_SHEETS_CREDENTIALS: %s", creds_path)
         return gspread.service_account(filename=creds_path)
-    
-    # Option 2: JSON content in environment variable
-    creds_json = os.environ.get("GOOGLE_SHEETS_CREDENTIALS_JSON")
-    
-    # Option 3: Try Airflow Variable (when running in MWAA)
-    if not creds_json:
-        try:
-            from airflow.models import Variable
-            creds_json = Variable.get("GOOGLE_SHEETS_CREDENTIALS", default_var=None)
-            if creds_json:
-                logger.info("Using Google Sheets credentials from Airflow Variable")
-        except ImportError:
-            pass  # Not running in Airflow
-    
-    if creds_json:
-        # Write to temp file since gspread expects a file path
-        try:
-            creds_dict = json.loads(creds_json)
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-                json.dump(creds_dict, f)
-                temp_path = f.name
-            logger.info("Using Google Sheets credentials from JSON content")
-            return gspread.service_account(filename=temp_path)
-        except json.JSONDecodeError as e:
-            logger.error("Failed to parse GOOGLE_SHEETS_CREDENTIALS JSON: %s", e)
-            raise
 
     logger.error(
-        "Google Sheets credentials not found. Set one of:\n"
-        "  - GOOGLE_SHEETS_CREDENTIALS: path to service account JSON file\n"
-        "  - GOOGLE_SHEETS_CREDENTIALS_JSON: raw JSON content\n"
-        "  - Airflow Variable 'GOOGLE_SHEETS_CREDENTIALS': raw JSON content"
+        "GOOGLE_SHEETS_CREDENTIALS is not set. Please set it to the path of your "
+        "service account JSON key file as described in this module's setup steps."
     )
-    raise RuntimeError("Missing Google Sheets credentials")
+    raise RuntimeError(
+        "Missing GOOGLE_SHEETS_CREDENTIALS environment variable required for Google "
+        "Sheets authentication."
+    )
 def export_to_sheet(
     gc: gspread.Client,
     spreadsheet_id: str,

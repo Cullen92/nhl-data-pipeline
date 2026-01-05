@@ -1,8 +1,8 @@
 {{
-  config(
-    materialized='table',
-    tags=['silver', 'bruins']
-  )
+    config(
+        materialized='table',
+        tags=['silver', 'bruins', 'tableau']
+    )
 }}
 
 -- Shot locations for the Bruins' next opponent (offensive shots only)

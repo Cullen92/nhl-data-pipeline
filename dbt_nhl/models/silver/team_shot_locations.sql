@@ -1,7 +1,7 @@
 {{
   config(
     materialized='table',
-    tags=['silver', 'shots']
+    tags=['silver', 'shots', 'tableau']
   )
 }}
 
@@ -155,3 +155,4 @@ SELECT
 FROM combined c
 LEFT JOIN {{ ref('dim_team') }} t ON c.team_id = t.team_id
 ORDER BY c.team_id, c.season, c.shot_context, c.total_shots DESC
+
