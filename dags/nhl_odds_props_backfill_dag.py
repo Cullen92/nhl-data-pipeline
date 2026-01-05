@@ -260,7 +260,7 @@ with DAG(
             
             if skip_existing and s3_key_exists(bucket=bucket, key=events_key):
                 # Load existing events list from S3
-                print(f"  Events list exists, loading from S3...")
+                print("  Events list exists, loading from S3...")
                 import boto3
                 s3 = boto3.client("s3", region_name=settings.aws_region)
                 obj = s3.get_object(Bucket=bucket, Key=events_key)

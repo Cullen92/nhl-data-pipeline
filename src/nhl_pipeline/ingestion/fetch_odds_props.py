@@ -212,7 +212,7 @@ def backfill_date(
     
     if skip_existing and s3_key_exists(bucket=bucket, key=events_key):
         # Load existing events list
-        logger.info(f"  Events list exists, loading from S3...")
+        logger.info("  Events list exists, loading from S3...")
         import boto3
         s3 = boto3.client("s3", region_name=get_settings().aws_region)
         obj = s3.get_object(Bucket=bucket, Key=events_key)
@@ -321,13 +321,13 @@ def backfill_props(
     api_key = settings.odds_api_key
     bucket = settings.s3_bucket
     
-    logger.info(f"=" * 60)
-    logger.info(f"NHL Player Props Backfill")
+    logger.info("=" * 60)
+    logger.info("NHL Player Props Backfill")
     logger.info(f"  Market: {market}")
     logger.info(f"  Date range: {start_date} to {end_date}")
     logger.info(f"  S3 bucket: {bucket}")
     logger.info(f"  Skip existing: {skip_existing}")
-    logger.info(f"=" * 60)
+    logger.info("=" * 60)
     
     # Generate date range
     start = datetime.strptime(start_date, "%Y-%m-%d")
@@ -360,13 +360,13 @@ def backfill_props(
         
         current += timedelta(days=1)
     
-    logger.info(f"=" * 60)
-    logger.info(f"Backfill Complete!")
+    logger.info("=" * 60)
+    logger.info("Backfill Complete!")
     logger.info(f"  Dates processed: {total_dates}")
     logger.info(f"  Events fetched: {total_events}")
     logger.info(f"  Events skipped: {total_skipped}")
     logger.info(f"  Credits remaining: {final_usage.requests_remaining:,}")
-    logger.info(f"=" * 60)
+    logger.info("=" * 60)
     
     return {
         "dates_processed": total_dates,
