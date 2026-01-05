@@ -33,11 +33,6 @@ sync-mwaa:
 deploy-mwaa: build-plugins sync-mwaa
 	@echo "Full MWAA deployment complete!"
 
-build-plugins:
-	@echo "Building plugins.zip for MWAA..."
-	@python3 -c "import shutil; shutil.make_archive('plugins', 'zip', root_dir='src', base_dir='nhl_pipeline')"
-	@echo "Done! Upload plugins.zip to your MWAA S3 bucket."
-
 test:
 	@$(PYTHON) -m pytest -q
 
