@@ -6,6 +6,7 @@ import time
 
 from airflow.models import DAG
 from airflow.providers.standard.operators.python import PythonOperator
+from airflow.providers.standard.operators.bash import BashOperator
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.utils.log.logging_mixin import LoggingMixin
 
@@ -172,7 +173,41 @@ with DAG(
         autocommit=True,
     )
 
+    # dbt run task - rebuild silver layer models after raw data loads
+    # dbt project is synced to S3 and available in the MWAA environment
+    # We use profiles.yml configured via environment variables
+    run_dbt_models = BashOperator(
+        task_id="run_dbt_models",
+        bash_command="""
+            cd /usr/local/airflow/dags/dbt_nhl && \
+            dbt run --profiles-dir . --target prod
+        """,
+        env={
+            "SNOWFLAKE_ACCOUNT": "{{ var.value.SNOWFLAKE_ACCOUNT }}",
+            "SNOWFLAKE_USER": "{{ var.value.SNOWFLAKE_USER }}",
+            "SNOWFLAKE_PASSWORD": "{{ var.value.SNOWFLAKE_PASSWORD }}",
+            "SNOWFLAKE_ROLE": "{{ var.value.SNOWFLAKE_ROLE }}",
+            "SNOWFLAKE_DATABASE": "{{ var.value.SNOWFLAKE_DATABASE }}",
+            "SNOWFLAKE_WAREHOUSE": "{{ var.value.SNOWFLAKE_WAREHOUSE }}",
+        },
+    )
+
+    # Export to Google Sheets for Tableau Public
+    # Runs the sheets_export module which reads from Snowflake and writes to Google Sheets
+    def export_to_sheets():
+        """Export dbt models to Google Sheets."""
+        from nhl_pipeline.export.sheets_export import main
+        main()
+
+    export_sheets = PythonOperator(
+        task_id="export_to_google_sheets",
+        python_callable=export_to_sheets,
+    )
+
     # Dependencies
     # S3 Ingestion must finish before we try to load any tables.
-    # The 3 load tasks can run in parallel.
+    # The 3 load tasks can run in parallel, then dbt runs after all loads complete.
+    # Finally, export to Google Sheets for Tableau.
     task_ingest_daily >> [load_schedule, load_boxscores, load_pbp]
+    [load_schedule, load_boxscores, load_pbp] >> run_dbt_models
+    run_dbt_models >> export_sheets

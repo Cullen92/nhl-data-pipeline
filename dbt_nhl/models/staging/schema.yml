@@ -12,6 +12,27 @@ sources:
       - name: game_pbp_snapshots
         description: Raw play-by-play snapshots from S3
 
+  - name: raw_odds
+    database: NHL
+    schema: RAW_ODDS
+    description: Raw betting odds data from The Odds API
+    tables:
+      - name: player_props
+        description: >
+          Raw player prop betting lines (SOG, goals, assists, etc.)
+          Loaded from S3 via Snowflake external tables or Snowpipe.
+        columns:
+          - name: payload
+            description: Full JSON payload containing odds data (VARIANT)
+          - name: s3_key
+            description: S3 object key where this snapshot is stored
+          - name: partition_date
+            description: Game date for this odds snapshot (YYYY-MM-DD)
+          - name: event_id
+            description: Odds API event identifier
+          - name: market
+            description: Betting market (e.g., player_shots_on_goal)
+
 models:
   - name: stg_games
     description: Cleaned game-level data from boxscore snapshots
@@ -33,3 +54,29 @@ models:
       - name: away_team_id
         tests:
           - not_null
+
+  - name: stg_odds_player_props
+    description: >
+      Parsed player prop betting lines from The Odds API.
+      Flattens nested JSON into individual player/line rows.
+    columns:
+      - name: game_date
+        description: Date of the game
+        tests:
+          - not_null
+      - name: event_id
+        description: Odds API event identifier
+        tests:
+          - not_null
+      - name: player_name
+        description: Player name as listed by bookmaker
+        tests:
+          - not_null
+      - name: line_value
+        description: The prop line (e.g., 3.5 for O/U 3.5 SOG)
+      - name: bet_type
+        description: Over or Under
+      - name: odds_american
+        description: American odds (e.g., -115, +100)
+      - name: bookmaker_key
+        description: Bookmaker identifier (draftkings, fanduel, etc.)

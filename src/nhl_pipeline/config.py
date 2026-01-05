@@ -18,6 +18,7 @@ class Settings:
     mwaa_bucket: str | None
     raw_prefix: str
     curated_prefix: str
+    odds_api_key: str | None = None
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
@@ -83,6 +84,12 @@ def get_settings() -> Settings:
     )
     raw_prefix = os.getenv("S3_RAW_PREFIX") or data.get("paths", {}).get("raw_prefix", "raw/nhl")
     curated_prefix = os.getenv("S3_CURATED_PREFIX") or data.get("paths", {}).get("curated_prefix", "curated/nhl")
+    odds_api_key = (
+        os.getenv("ODDS_API_KEY")
+        or os.getenv("odds_api_key")
+        or _get_airflow_variable("ODDS_API_KEY")
+        or data.get("odds_api", {}).get("api_key")
+    )
 
     missing = [name for name, val in [("aws.region", aws_region), ("s3.bucket", s3_bucket)] if not val]
     if missing:
@@ -94,4 +101,5 @@ def get_settings() -> Settings:
         mwaa_bucket=str(mwaa_bucket) if mwaa_bucket else None,
         raw_prefix=str(raw_prefix),
         curated_prefix=str(curated_prefix),
+        odds_api_key=str(odds_api_key) if odds_api_key else None,
     )

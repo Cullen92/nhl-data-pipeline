@@ -96,3 +96,22 @@ def raw_stats_skater_powerplay_key(
 def raw_meta_backfill_gamecenter_success_key(date: str) -> str:
     """Marker written when a gamecenter backfill date completes successfully."""
     return f"raw/nhl/_meta/backfill/gamecenter/date={date}/_SUCCESS.json"
+
+
+def raw_odds_player_props_key(game_date: str, event_id: str, market: str) -> str:
+    """S3 key for historical player prop odds from The Odds API.
+    
+    Args:
+        game_date: Game date in YYYY-MM-DD format
+        event_id: The Odds API event ID
+        market: Market type (e.g., 'player_shots_on_goal')
+    """
+    return (
+        f"raw/odds/player_props/market={market}/date={game_date}/"
+        f"event_{event_id}.json"
+    )
+
+
+def raw_odds_events_key(game_date: str) -> str:
+    """S3 key for historical NHL events from The Odds API."""
+    return f"raw/odds/events/date={game_date}/events.json"
