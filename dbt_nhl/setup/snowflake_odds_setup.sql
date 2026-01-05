@@ -5,7 +5,20 @@
 CREATE SCHEMA IF NOT EXISTS NHL.RAW_ODDS;
 
 -- 2. Create stage pointing to odds S3 path
--- Note: Uses the same storage integration as the NHL data
+-- Note: Uses the same storage integration as the NHL data.
+-- The STORAGE INTEGRATION `S3_NHL_INTEGRATION` must already exist in this Snowflake account.
+-- If you don't have it yet, create (or update) an S3 storage integration, for example:
+--   CREATE OR REPLACE STORAGE INTEGRATION S3_NHL_INTEGRATION
+--     TYPE = EXTERNAL_STAGE
+--     STORAGE_PROVIDER = 'S3'
+--     ENABLED = TRUE
+--     STORAGE_AWS_ROLE_ARN = '<your_aws_iam_role_arn>'
+--     STORAGE_ALLOWED_LOCATIONS = ('s3://nhl-data-pipeline-cullenm-dev/');
+--
+-- Then grant usage as needed, and revisit Snowflake docs for full configuration details:
+-- https://docs.snowflake.com/en/user-guide/storage-integrations-s3
+--
+-- If your integration has a different name, update the STORAGE_INTEGRATION value below.
 CREATE OR REPLACE STAGE NHL.RAW_ODDS.ODDS_S3_STAGE
     STORAGE_INTEGRATION = S3_NHL_INTEGRATION  -- Update if your integration has a different name
     URL = 's3://{{ env_var("ODDS_S3_BUCKET") }}/raw/odds/'
