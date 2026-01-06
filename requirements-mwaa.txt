@@ -8,3 +8,7 @@ apache-airflow-providers-common-sql
 snowflake-connector-python
 snowflake-sqlalchemy
 apache-airflow-providers-snowflake
+dbt-snowflake
+gspread
+gspread-dataframe
+pandas

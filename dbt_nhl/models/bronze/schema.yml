@@ -65,3 +65,30 @@ models:
         description: NHL game identifier (10 digits) extracted for partitioning
         tests:
           - not_null
+
+  - name: bronze_odds_player_props
+    description: >
+      Raw player prop odds snapshots from The Odds API stored in S3.
+      Contains betting lines for player props (SOG, goals, assists, etc.).
+      Bronze layer - immutable source of truth.
+    columns:
+      - name: payload
+        description: Full JSON payload containing odds data (VARIANT type)
+        tests:
+          - not_null
+      - name: s3_key
+        description: S3 object key where this snapshot is stored
+        tests:
+          - not_null
+      - name: game_date
+        description: Date of the game (YYYY-MM-DD format)
+        tests:
+          - not_null
+      - name: event_id
+        description: Odds API event identifier
+        tests:
+          - not_null
+      - name: market
+        description: Betting market (e.g., player_shots_on_goal)
+        tests:
+          - not_null

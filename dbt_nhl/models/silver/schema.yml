@@ -867,3 +867,36 @@ models:
         description: Number of games played by this team in the season up to and including this game
         tests:
           - not_null
+
+  - name: fact_player_sog_props
+    description: >
+      Player SOG prop betting lines with actual outcomes.
+      Joins betting lines from The Odds API with actual player performance.
+      One row per player-game with the line, odds, actual SOG, and outcome.
+    columns:
+      - name: game_date
+        description: Date of the game
+        tests:
+          - not_null
+      - name: event_id
+        description: Odds API event identifier
+        tests:
+          - not_null
+      - name: odds_player_name
+        description: Player name as listed by bookmaker
+        tests:
+          - not_null
+      - name: sog_line
+        description: The betting line (e.g., 3.5 for O/U 3.5 SOG)
+      - name: over_odds
+        description: American odds for the Over
+      - name: under_odds
+        description: American odds for the Under
+      - name: actual_sog
+        description: Actual shots on goal in the game
+      - name: outcome
+        description: Result - over, under, or push
+      - name: hit_over
+        description: Boolean - did player hit the over (NULL for push)
+      - name: sog_vs_line
+        description: Actual SOG minus line (positive = over)

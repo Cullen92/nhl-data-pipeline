@@ -13,3 +13,15 @@ nhl:
       schema: STAGING
       threads: 4
       client_session_keep_alive: False
+
+    prod:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT', 'XWOLWMN-IH17965') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'NHL') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'NHL_WH') }}"
+      schema: SILVER
+      threads: 4
+      client_session_keep_alive: False

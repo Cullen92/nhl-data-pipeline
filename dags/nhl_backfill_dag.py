@@ -27,7 +27,17 @@ from nhl_pipeline.config import get_settings
 
 
 def _env(name: str, default: str) -> str:
-    return os.getenv(name) or default
+    """Get value from environment variable or Airflow Variable."""
+    env_val = os.getenv(name)
+    if env_val:
+        return env_val
+    try:
+        var_val = Variable.get(name, default_var=None)
+        if var_val:
+            return var_val
+    except Exception:
+        pass
+    return default
 
 
 def _parse_date_yyyy_mm_dd(value: str) -> datetime:
