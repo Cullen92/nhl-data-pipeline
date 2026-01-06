@@ -328,6 +328,9 @@ def main():
         from cryptography.hazmat.backends import default_backend
         from cryptography.hazmat.primitives import serialization
         
+        # Expand ~ to home directory
+        private_key_path = os.path.expanduser(private_key_path)
+        
         with open(private_key_path, 'rb') as key_file:
             p_key = serialization.load_pem_private_key(
                 key_file.read(),
