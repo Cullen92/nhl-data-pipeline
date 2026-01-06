@@ -75,7 +75,7 @@ player_actuals AS (
     SELECT
         g.game_date,
         p.player_name,
-        pgs.shots_on_goal,
+        pgs.shots AS shots_on_goal,
         pgs.game_id,
         t.team_name,
         CASE 
@@ -86,7 +86,7 @@ player_actuals AS (
     JOIN {{ ref('stg_games') }} g ON pgs.game_id = g.game_id
     JOIN {{ ref('dim_player') }} p ON pgs.player_id = p.player_id
     JOIN {{ ref('dim_team') }} t ON pgs.team_id = t.team_id
-    WHERE pgs.shots_on_goal IS NOT NULL
+    WHERE pgs.shots IS NOT NULL
 )
 
 SELECT

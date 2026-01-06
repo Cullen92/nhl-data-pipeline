@@ -41,11 +41,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       
+      - name: Setup Snowflake private key
+        run: |
+          mkdir -p ~/.snowflake
+          echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ~/.snowflake/rsa_key.p8
+          chmod 600 ~/.snowflake/rsa_key.p8
+      
       - name: Run Time Travel validation
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_PRIVATE_KEY_PATH: ~/.snowflake/rsa_key.p8
           SNOWFLAKE_WAREHOUSE: NHL_WH
           SNOWFLAKE_DATABASE: NHL
           SNOWFLAKE_ROLE: TRANSFORMER

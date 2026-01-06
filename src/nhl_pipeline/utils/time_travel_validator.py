@@ -314,14 +314,42 @@ def main():
     connection_params = {
         'account': os.getenv('SNOWFLAKE_ACCOUNT'),
         'user': os.getenv('SNOWFLAKE_USER'),
-        'password': os.getenv('SNOWFLAKE_PASSWORD'),
         'warehouse': os.getenv('SNOWFLAKE_WAREHOUSE', 'NHL_WH'),
         'database': os.getenv('SNOWFLAKE_DATABASE', 'NHL_DB'),
         'role': os.getenv('SNOWFLAKE_ROLE', 'TRANSFORMER')
     }
+    
+    # Support both password and private key authentication
+    private_key_path = os.getenv('SNOWFLAKE_PRIVATE_KEY_PATH')
+    password = os.getenv('SNOWFLAKE_PASSWORD')
+    
+    if private_key_path:
+        # Use private key authentication
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives import serialization
+        
+        with open(private_key_path, 'rb') as key_file:
+            p_key = serialization.load_pem_private_key(
+                key_file.read(),
+                password=None,
+                backend=default_backend()
+            )
+        
+        pkb = p_key.private_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+        connection_params['private_key'] = pkb
+    elif password:
+        # Use password authentication
+        connection_params['password'] = password
+    else:
+        print("❌ Missing Snowflake authentication: set either SNOWFLAKE_PASSWORD or SNOWFLAKE_PRIVATE_KEY_PATH")
+        sys.exit(1)
 
     # Validate required Snowflake credentials early for clearer errors
-    required_env_vars = ['SNOWFLAKE_ACCOUNT', 'SNOWFLAKE_USER', 'SNOWFLAKE_PASSWORD']
+    required_env_vars = ['SNOWFLAKE_ACCOUNT', 'SNOWFLAKE_USER']
     missing_env_vars = [var for var in required_env_vars if not os.getenv(var)]
     if missing_env_vars:
         print(

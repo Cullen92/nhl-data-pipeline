@@ -900,3 +900,67 @@ models:
         description: Boolean - did player hit the over (NULL for push)
       - name: sog_vs_line
         description: Actual SOG minus line (positive = over)
+  - name: fact_player_sog_props_v2
+    description: >
+      Player SOG prop betting lines with actual outcomes (v2 with improved name matching).
+      Uses stg_player_name_crosswalk for reliable player-to-player matching.
+      One row per player-game with the line, odds, actual SOG, outcome, and match confidence.
+    columns:
+      - name: game_date
+        description: Date of the game
+        tests:
+          - not_null
+      - name: event_id
+        description: Odds API event identifier
+        tests:
+          - not_null
+      - name: odds_player_name
+        description: Player name as listed by bookmaker
+        tests:
+          - not_null
+      - name: sog_line
+        description: The betting line (e.g., 3.5 for O/U 3.5 SOG)
+      - name: over_odds
+        description: American odds for the Over
+      - name: under_odds
+        description: American odds for the Under
+      - name: match_method
+        description: How the player name was matched (exact, normalized, initial_last, or NULL if unmatched)
+      - name: name_match_confidence
+        description: Confidence score of the name match (1.0 = perfect match)
+      - name: nhl_player_name
+        description: Player name from NHL API (NULL if unmatched)
+      - name: nhl_player_id
+        description: NHL player ID (NULL if unmatched)
+      - name: actual_sog
+        description: Actual shots on goal in the game
+      - name: outcome
+        description: Result - over, under, push, or unmatched
+      - name: hit_over
+        description: Boolean - did player hit the over (NULL for push or unmatched)
+      - name: sog_vs_line
+        description: Actual SOG minus line (positive = over)
+      - name: over_implied_prob
+        description: Implied probability from American odds (decimal 0-1)
+      - name: under_implied_prob
+        description: Implied probability from American odds (decimal 0-1)
+
+  - name: rpt_sog_props_performance
+    description: >
+      Aggregated betting performance analysis for SOG props.
+      Shows hit rates, edges, and ROI metrics for various segments.
+    columns:
+      - name: analysis_type
+        description: Type of analysis (overall, line_bucket, player, daily)
+        tests:
+          - not_null
+      - name: segment
+        description: Segment name (e.g., line value, player name)
+      - name: total_props
+        description: Number of props in this segment
+      - name: overs_hit
+        description: Number of overs that hit
+      - name: over_hit_rate_pct
+        description: Percentage of props that went over
+      - name: edge_pct
+        description: Difference between actual hit rate and implied probability

@@ -43,7 +43,7 @@ EXPORTS = [
     {"query": "SELECT * FROM NHL.STAGING_SILVER.DIM_TEAM", "sheet": "dim_team"},
     {"query": "SELECT * FROM NHL.STAGING_SILVER.FACT_PLAYER_GAME_STATS", "sheet": "fact_player_game_stats"},
     {"query": "SELECT * FROM NHL.STAGING_SILVER.TEAM_SHOTS_AGAINST_BY_POSITION", "sheet": "team_shots_against_by_position"},
-    {"query": "SELECT * FROM NHL.STAGING_SILVER.FACT_SHOT_EVENTS", "sheet": "fact_shot_events"},
+    #{"query": "SELECT * FROM NHL.STAGING_SILVER.FACT_SHOT_EVENTS", "sheet": "fact_shot_events"},
     # Bruins-only views for Tableau Public heatmap (small enough for Google Sheets)
     {"query": "SELECT * FROM NHL.STAGING_SILVER.BRUINS_PLAYER_SHOT_LOCATIONS", "sheet": "bruins_player_shot_locations"},
     {"query": "SELECT * FROM NHL.STAGING_SILVER.BRUINS_TEAM_SHOT_LOCATIONS", "sheet": "bruins_team_shot_locations"},

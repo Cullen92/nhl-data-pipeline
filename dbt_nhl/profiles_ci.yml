@@ -1,0 +1,15 @@
+# CI/CD profile - uses private key authentication with service account
+nhl:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: XWOLWMN-IH17965
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH') }}"
+      role: ACCOUNTADMIN
+      database: NHL
+      warehouse: NHL_WH
+      schema: STAGING
+      threads: 4
+      client_session_keep_alive: False
