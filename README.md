@@ -20,7 +20,7 @@ I'm starting the analytics aspect of the project while learning **Hex** - here's
 
 *Auto-refreshing player shot analysis with rink heatmaps, opponent scouting, and performance trends.*
 
-Note: I've hit my limits with Tableau public. With trying to run historic data over multiple seasons while keeping costs down (using Google Sheets to import) I've found Tableau free to be too limiting. I'm moving onto analysis with other tools but plan to visit visualization with Looker / Streamlit at somepoint.
+Note: I've hit my limits with Tableau public. With trying to run historic data over multiple seasons while keeping costs down (using Google Sheets to import) I've found Tableau free to be too limiting. I'm moving onto analysis with other tools but plan to visit visualization with Looker / Streamlit at some point.
 ---
 
 ## Project Overview
