@@ -6,7 +6,7 @@ A production-grade data platform for NHL game analytics, featuring automated ing
 
 I'm starting the analytics aspect of the project while learning **Hex** - here's a preview at what's to come: **56.7% hit rate!**
 
-![Player Shot Over Analysis](docs/images/hex_analytics_preview.png)
+![Player Shot Over Analysis](docs/images/HexAnalysis.png)
 
 *Early analysis shows D-men consistently hit the over on shots against vulnerable opponents - stay tuned for more live links!*
 
