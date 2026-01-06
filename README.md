@@ -4,7 +4,7 @@ A production-grade data platform for NHL game analytics, featuring automated ing
 
 ## 🎯 Analytics Preview
 
-I'm starting the analytics aspect of the project while learning **Hex** - here's a preview at what's to come: **56.7% hit rate!**
+I'm starting the analytics aspect of the project while learning **Hex** - here's a preview of what's to come: **56.7% hit rate!**
 
 ![Player Shot Over Analysis](docs/images/HexAnalysis.png)
 
