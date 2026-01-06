@@ -2,6 +2,16 @@
 
 A production-grade data platform for NHL game analytics, featuring automated ingestion, medallion architecture transformation, and dimensional modeling for advanced statistics and player performance analysis.
 
+## 🎯 Analytics Preview
+
+I'm starting the analytics aspect of the project while learning **Hex** - here's a preview of what's to come: **56.7% hit rate!**
+
+![Player Shot Over Analysis](docs/images/HexAnalysis.png)
+
+*Early analysis shows D-men consistently hit the over on shots against vulnerable opponents - stay tuned for more live links!*
+
+---
+
 ## 🏒 Live Dashboard
 
 [![Bruins Shot Analytics Dashboard](docs/images/SOGsReport.png)](https://public.tableau.com/app/profile/cullen.mcelroy/viz/BruinsShotsonGoalSummary/BruinsPlayerShotSummary)
@@ -9,6 +19,8 @@ A production-grade data platform for NHL game analytics, featuring automated ing
 **[📊 View Live Dashboard on Tableau Public →](https://public.tableau.com/app/profile/cullen.mcelroy/viz/BruinsShotsonGoalSummary/BruinsPlayerShotSummary)**
 
 *Auto-refreshing player shot analysis with rink heatmaps, opponent scouting, and performance trends.*
+
+Note: I've hit my limits with Tableau Public. While trying to run historic data over multiple seasons and keep costs down (using Google Sheets to import), I've found the free version of Tableau to be too limiting. I'm moving on to analysis with other tools but plan to revisit visualization with Looker or Streamlit at some point.
 ---
 
 ## Project Overview
