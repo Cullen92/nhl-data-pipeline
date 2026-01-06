@@ -80,3 +80,30 @@ models:
         description: American odds (e.g., -115, +100)
       - name: bookmaker_key
         description: Bookmaker identifier (draftkings, fanduel, etc.)
+  - name: stg_player_name_crosswalk
+    description: >
+      Mapping table that links player names from The Odds API to NHL API player IDs.
+      Uses multiple matching strategies to handle naming differences (accents, abbreviations, etc.).
+    columns:
+      - name: odds_player_name
+        description: Player name as it appears in The Odds API data
+        tests:
+          - unique
+          - not_null
+      - name: nhl_player_id
+        description: NHL player ID from boxscore data
+        tests:
+          - not_null
+      - name: nhl_player_name
+        description: Player name as it appears in NHL API data
+        tests:
+          - not_null
+      - name: current_team_abbrev
+        description: Player's current team abbreviation
+      - name: match_method
+        description: How the name was matched (exact, normalized, initial_last)
+        tests:
+          - accepted_values:
+              values: ['exact', 'normalized', 'initial_last']
+      - name: confidence
+        description: Confidence score of the match (1.0 = perfect match)

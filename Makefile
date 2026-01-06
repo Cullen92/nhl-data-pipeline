@@ -56,6 +56,16 @@ dbt-run:
 	@source ./.env && cd dbt_nhl && ../$(DBT) run
 	@echo "Done!"
 
+dbt-run-odds:
+	@echo "Running odds-related dbt models..."
+	@source ./.env && cd dbt_nhl && ../$(DBT) run --select tag:odds+
+	@echo "Done!"
+
+dbt-test-odds:
+	@echo "Testing odds-related dbt models..."
+	@source ./.env && cd dbt_nhl && ../$(DBT) test --select tag:odds
+	@echo "Done!"
+
 dbt-run-export: dbt-run export-sheets
 	@echo "dbt run and Google Sheets export complete!"
 
