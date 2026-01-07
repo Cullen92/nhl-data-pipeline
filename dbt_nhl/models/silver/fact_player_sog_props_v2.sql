@@ -71,17 +71,76 @@ pivoted_lines AS (
     GROUP BY 1, 2, 3, 4, 5, 6, 7
 ),
 
--- Join with player name crosswalk to get NHL player IDs
+-- Get all players from recent games to build a comprehensive roster
+-- This includes players who haven't played THIS season yet but played recently
+recent_players AS (
+    SELECT DISTINCT
+        pgs.player_id,
+        p.player_name,
+        t.team_abbrev,
+        g.game_date
+    FROM {{ ref('fact_player_game_stats') }} pgs
+    JOIN {{ ref('stg_games') }} g ON pgs.game_id = g.game_id
+    JOIN {{ ref('dim_player') }} p ON pgs.player_id = p.player_id
+    JOIN {{ ref('dim_team') }} t ON pgs.team_id = t.team_id
+    WHERE g.game_date >= DATEADD(day, -180, CURRENT_DATE())  -- Last 6 months of games
+),
+
+-- Create an enhanced crosswalk that includes team context
+enhanced_crosswalk AS (
+    SELECT
+        pl.game_date,
+        pl.home_team,
+        pl.away_team,
+        pl.player_name AS odds_player_name,
+        rp.player_id,
+        rp.player_name AS nhl_player_name,
+        rp.team_abbrev,
+        -- Match method logic
+        CASE
+            WHEN UPPER(TRIM(pl.player_name)) = UPPER(TRIM(rp.player_name)) THEN 'exact'
+            WHEN UPPER(REPLACE(REPLACE(TRIM(pl.player_name), '.', ''), '  ', ' ')) = 
+                 UPPER(REPLACE(REPLACE(TRIM(rp.player_name), '.', ''), '  ', ' ')) THEN 'normalized'
+            ELSE 'fuzzy'
+        END AS match_method,
+        -- Confidence based on match quality and team alignment
+        CASE
+            WHEN UPPER(TRIM(pl.player_name)) = UPPER(TRIM(rp.player_name)) THEN 1.0
+            WHEN UPPER(REPLACE(REPLACE(TRIM(pl.player_name), '.', ''), '  ', ' ')) = 
+                 UPPER(REPLACE(REPLACE(TRIM(rp.player_name), '.', ''), '  ', ' ')) THEN 0.95
+            ELSE 0.85
+        END AS confidence,
+        -- Rank matches - prefer exact matches and players on teams in this game
+        ROW_NUMBER() OVER (
+            PARTITION BY pl.game_date, pl.event_id, pl.player_name
+            ORDER BY 
+                CASE WHEN UPPER(TRIM(pl.player_name)) = UPPER(TRIM(rp.player_name)) THEN 1 ELSE 2 END,
+                CASE WHEN rp.team_abbrev IN (pl.home_team, pl.away_team) THEN 1 ELSE 2 END,
+                rp.game_date DESC  -- Most recent game
+        ) AS match_rank
+    FROM pivoted_lines pl
+    INNER JOIN recent_players rp
+        -- Fuzzy matching: last name must match + first initial
+        ON UPPER(SPLIT_PART(TRIM(pl.player_name), ' ', -1)) = UPPER(SPLIT_PART(TRIM(rp.player_name), ' ', -1))
+        AND LEFT(UPPER(TRIM(pl.player_name)), 1) = LEFT(UPPER(TRIM(rp.player_name)), 1)
+    WHERE rp.game_date <= pl.game_date  -- Only use historical data
+),
+
+-- Take best match per odds player
 lines_with_player_id AS (
     SELECT
         pl.*,
-        xw.nhl_player_id,
+        xw.player_id AS nhl_player_id,
         xw.nhl_player_name,
+        xw.team_abbrev,
         xw.match_method,
         xw.confidence AS name_match_confidence
     FROM pivoted_lines pl
-    LEFT JOIN {{ ref('stg_player_name_crosswalk') }} xw
-        ON pl.player_name = xw.odds_player_name
+    LEFT JOIN enhanced_crosswalk xw
+        ON pl.game_date = xw.game_date
+        AND pl.event_id = xw.event_id
+        AND pl.player_name = xw.odds_player_name
+        AND xw.match_rank = 1
 ),
 
 -- Get actual player stats for each game
@@ -120,11 +179,13 @@ joined AS (
         l.line_last_update,
         l.match_method,
         l.name_match_confidence,
-        a.player_name AS nhl_player_name,
-        a.player_id AS nhl_player_id,
-        a.team_name,
-        a.team_abbrev,
-        a.home_away,
+        -- Use matched player info from crosswalk (available pregame)
+        l.nhl_player_name,
+        l.nhl_player_id,
+        l.team_abbrev,
+        -- Override with actual game data when available (postgame)
+        COALESCE(a.team_name, NULL) AS team_name,
+        COALESCE(a.home_away, NULL) AS home_away,
         a.shots_on_goal AS actual_sog,
         a.game_id
     FROM lines_with_player_id l

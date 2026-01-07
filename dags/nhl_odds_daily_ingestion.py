@@ -286,7 +286,7 @@ with DAG(
         task_id="run_dbt_odds_models",
         bash_command="""
             cd /usr/local/airflow/dags/dbt_nhl && \
-            dbt run --profiles-dir . --target prod --select tag:odds
+            python3 -m dbt run --profiles-dir . --target prod --select tag:odds
         """,
         env={
             "SNOWFLAKE_ACCOUNT": "{{ var.value.SNOWFLAKE_ACCOUNT }}",
