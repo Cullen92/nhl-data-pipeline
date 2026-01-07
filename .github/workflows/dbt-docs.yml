@@ -49,14 +49,14 @@ jobs:
         working-directory: dbt_nhl
         env:
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PRIVATE_KEY_PATH: ~/.snowflake/rsa_key.p8
+          SNOWFLAKE_PRIVATE_KEY_PATH: /home/runner/.snowflake/rsa_key.p8
         run: dbt deps
 
       - name: Generate dbt docs
         working-directory: dbt_nhl
         env:
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PRIVATE_KEY_PATH: ~/.snowflake/rsa_key.p8
+          SNOWFLAKE_PRIVATE_KEY_PATH: /home/runner/.snowflake/rsa_key.p8
         run: dbt docs generate
 
       - name: Prepare docs for GitHub Pages

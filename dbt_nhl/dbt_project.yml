@@ -33,8 +33,3 @@ models:
     staging:
       +materialized: view
       +schema: staging
-    
-    # Analytics models (tables/incremental) - legacy
-    analytics:
-      +materialized: table
-      +schema: analytics
