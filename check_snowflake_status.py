@@ -50,8 +50,8 @@ def check_database_status(conn):
     print("SNOWFLAKE DATABASE STATUS CHECK")
     print("="*80)
     print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"Database: NHL")
-    print(f"Account: XWOLWMN-IH17965")
+    print("Database: NHL")
+    print("Account: XWOLWMN-IH17965")
     
     # Check warehouse status
     print("\n" + "-"*80)
@@ -106,11 +106,11 @@ def check_database_status(conn):
                         
                         print(f"  • {table['name']:<40} {row_count:>12,} rows")
                         total_tables += 1
-                    except Exception as e:
+                    except Exception:
                         print(f"  • {table['name']:<40} (error getting count)")
             else:
                 print(f"\n{schema} Schema: (empty)")
-        except Exception as e:
+        except Exception:
             print(f"\n{schema} Schema: Not accessible or doesn't exist")
     
     # Check views
@@ -127,7 +127,7 @@ def check_database_status(conn):
                 print(f"\n{schema} Schema ({len(views)} views):")
                 for view in views:
                     print(f"  • {view['name']}")
-        except Exception as e:
+        except Exception:
             pass
     
     # Summary
@@ -160,7 +160,7 @@ def check_database_status(conn):
                 print(f"  {table_name}: {latest}")
             else:
                 print(f"  {table_name}: No data")
-        except Exception as e:
+        except Exception:
             print(f"  {table_name}: Table not found or error")
     
     cursor.close()
