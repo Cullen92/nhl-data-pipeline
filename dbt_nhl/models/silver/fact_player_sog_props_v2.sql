@@ -160,7 +160,8 @@ SELECT
     
     -- Outcome calculations
     CASE 
-        WHEN actual_sog IS NULL THEN 'unmatched'
+        WHEN actual_sog IS NULL AND nhl_player_id IS NULL THEN 'unmatched'  -- Couldn't match player
+        WHEN actual_sog IS NULL THEN 'pending'  -- Game hasn't been played yet
         WHEN actual_sog > sog_line THEN 'over'
         WHEN actual_sog < sog_line THEN 'under'
         ELSE 'push'
