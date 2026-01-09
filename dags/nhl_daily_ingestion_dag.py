@@ -6,8 +6,8 @@ import time
 
 from airflow.models import DAG
 from airflow.providers.standard.operators.python import PythonOperator
-from airflow.providers.standard.operators.bash import BashOperator
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+from airflow.providers.dbt.cloud.operators.dbt import DbtCloudRunJobOperator
 from airflow.utils.log.logging_mixin import LoggingMixin
 
 from nhl_pipeline.ingestion.fetch_game_boxscore import (
@@ -195,23 +195,15 @@ with DAG(
         autocommit=True,
     )
 
-    # dbt run task - rebuild silver layer models after raw data loads
-    # dbt project is synced to S3 and available in the MWAA environment
-    # We use profiles.yml configured via environment variables
-    run_dbt_models = BashOperator(
+    # dbt Cloud - trigger job and wait for completion
+    # Connection 'dbt_cloud_default' configured in Airflow with Account ID + API Token
+    # Job ID from dbt Cloud after creating the job
+    run_dbt_models = DbtCloudRunJobOperator(
         task_id="run_dbt_models",
-        bash_command="""
-            cd /usr/local/airflow/dags/dbt_nhl && \
-            python3 -m dbt run --profiles-dir . --target prod
-        """,
-        env={
-            "SNOWFLAKE_ACCOUNT": "{{ var.value.SNOWFLAKE_ACCOUNT }}",
-            "SNOWFLAKE_USER": "{{ var.value.SNOWFLAKE_USER }}",
-            "SNOWFLAKE_PASSWORD": "{{ var.value.SNOWFLAKE_PASSWORD }}",
-            "SNOWFLAKE_ROLE": "{{ var.value.SNOWFLAKE_ROLE }}",
-            "SNOWFLAKE_DATABASE": "{{ var.value.SNOWFLAKE_DATABASE }}",
-            "SNOWFLAKE_WAREHOUSE": "{{ var.value.SNOWFLAKE_WAREHOUSE }}",
-        },
+        job_id="{{ var.value.DBT_CLOUD_JOB_ID }}",
+        check_interval=30,  # Poll every 30 seconds
+        timeout=600,  # 10 minute timeout
+        wait_for_termination=True,
     )
 
     # Export to Google Sheets for Tableau Public

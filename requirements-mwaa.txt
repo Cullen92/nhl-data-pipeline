@@ -1,14 +1,20 @@
 --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-3.0.6/constraints-3.12.txt"
 
+# Core dependencies
 boto3
 pydantic
 python-dotenv
 pyyaml
+pandas==2.1.4
+
+# Snowflake - pinned to constraint versions
 apache-airflow-providers-common-sql
-snowflake-connector-python
-snowflake-sqlalchemy
-apache-airflow-providers-snowflake
-dbt-snowflake
+apache-airflow-providers-snowflake==6.4.0
+snowflake-connector-python==3.17.2
+
+# dbt Cloud integration (triggers dbt Cloud jobs via API)
+apache-airflow-providers-dbt-cloud==4.4.2
+
+# Google Sheets export
 gspread
 gspread-dataframe
-pandas

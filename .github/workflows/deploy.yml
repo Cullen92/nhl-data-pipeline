@@ -45,7 +45,7 @@ jobs:
 
       - name: Sync Requirements
         run: |
-          aws s3 cp requirements-mwaa.txt s3://$MWAA_S3_BUCKET/requirements.txt
+          aws s3 cp requirements-mwaa.txt s3://$MWAA_S3_BUCKET/requirements/requirements-mwaa.txt
 
       - name: Sync dbt Project
         # We sync the dbt project to a folder in dags/ so Airflow can access it easily

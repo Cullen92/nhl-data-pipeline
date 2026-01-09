@@ -23,8 +23,8 @@ from typing import Any
 
 from airflow.models import DAG, Variable
 from airflow.providers.standard.operators.python import PythonOperator
-from airflow.providers.standard.operators.bash import BashOperator
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+from airflow.providers.dbt.cloud.operators.dbt import DbtCloudRunJobOperator
 
 import requests
 
@@ -279,23 +279,14 @@ with DAG(
         autocommit=True,
     )
 
-    # dbt run task - rebuild odds models after odds data loads
-    # This ensures fact_player_sog_props_v2 is available for pregame analysis
-    # We only run the odds-related models to keep this fast
-    run_dbt_odds_models = BashOperator(
+    # dbt Cloud - trigger odds job and wait for completion
+    # Uses separate job that runs with --select tag:odds
+    run_dbt_odds_models = DbtCloudRunJobOperator(
         task_id="run_dbt_odds_models",
-        bash_command="""
-            cd /usr/local/airflow/dags/dbt_nhl && \
-            python3 -m dbt run --profiles-dir . --target prod --select tag:odds
-        """,
-        env={
-            "SNOWFLAKE_ACCOUNT": "{{ var.value.SNOWFLAKE_ACCOUNT }}",
-            "SNOWFLAKE_USER": "{{ var.value.SNOWFLAKE_USER }}",
-            "SNOWFLAKE_PASSWORD": "{{ var.value.SNOWFLAKE_PASSWORD }}",
-            "SNOWFLAKE_ROLE": "{{ var.value.SNOWFLAKE_ROLE }}",
-            "SNOWFLAKE_DATABASE": "{{ var.value.SNOWFLAKE_DATABASE }}",
-            "SNOWFLAKE_WAREHOUSE": "{{ var.value.SNOWFLAKE_WAREHOUSE }}",
-        },
+        job_id="{{ var.value.DBT_CLOUD_ODDS_JOB_ID }}",
+        check_interval=30,
+        timeout=600,
+        wait_for_termination=True,
     )
 
     # Dependencies
