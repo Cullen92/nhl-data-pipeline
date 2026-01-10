@@ -266,14 +266,14 @@ with DAG(
                 SELECT 
                     $1,
                     METADATA$FILENAME,
-                    TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'date=(\\d{4}-\\d{2}-\\d{2})', 1, 1, 'e')),
-                    REGEXP_SUBSTR(METADATA$FILENAME, 'event_([a-z0-9]+)_', 1, 1, 'e'),
+                    TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'date=([0-9]{4}-[0-9]{2}-[0-9]{2})', 1, 1, 'e')),
+                    REGEXP_SUBSTR(METADATA$FILENAME, 'event_([a-z0-9]+)', 1, 1, 'e'),
                     REGEXP_SUBSTR(METADATA$FILENAME, 'market=([^/]+)', 1, 1, 'e'),
                     CURRENT_TIMESTAMP()
                 FROM @NHL.RAW_ODDS.ODDS_S3_STAGE/player_props/
             )
             FILE_FORMAT=(TYPE=JSON)
-            PATTERN='.*\\.json$'
+            PATTERN='.*\.json$'
             ON_ERROR='CONTINUE';
         """,
         autocommit=True,
