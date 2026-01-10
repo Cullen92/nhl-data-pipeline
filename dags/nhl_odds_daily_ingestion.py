@@ -270,7 +270,7 @@ with DAG(
                     REGEXP_SUBSTR(METADATA$FILENAME, 'event_([a-z0-9]+)_', 1, 1, 'e'),
                     REGEXP_SUBSTR(METADATA$FILENAME, 'market=([^/]+)', 1, 1, 'e'),
                     CURRENT_TIMESTAMP()
-                FROM @NHL.RAW_ODDS.ODDS_RAW_S3_STAGE/player_props/
+                FROM @NHL.RAW_ODDS.ODDS_S3_STAGE/player_props/
             )
             FILE_FORMAT=(TYPE=JSON)
             PATTERN='.*\\.json$'

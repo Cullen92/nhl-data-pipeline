@@ -210,8 +210,40 @@ with DAG(
     # Runs the sheets_export module which reads from Snowflake and writes to Google Sheets
     def export_to_sheets():
         """Export dbt models to Google Sheets."""
+        import os
+        import json
+        import tempfile
+        import boto3
+        from airflow.models import Variable
+        
+        # Download Google credentials from S3 (avoids Variable JSON escaping issues)
+        s3 = boto3.client("s3")
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            creds_obj = s3.get_object(
+                Bucket="mwaa-bucket-nhl-cullenm-dev",
+                Key="config/google-sheets-credentials.json"
+            )
+            creds_content = creds_obj["Body"].read().decode("utf-8")
+            f.write(creds_content)
+            creds_path = f.name
+        
+        os.environ["GOOGLE_SHEET_ID"] = Variable.get("GOOGLE_SHEET_ID").strip()
+        os.environ["GOOGLE_SHEETS_CREDENTIALS"] = creds_path
+        
+        # Snowflake credentials
+        os.environ["SNOWFLAKE_ACCOUNT"] = Variable.get("SNOWFLAKE_ACCOUNT").strip()
+        os.environ["SNOWFLAKE_USER"] = Variable.get("SNOWFLAKE_USER").strip()
+        os.environ["SNOWFLAKE_PASSWORD"] = Variable.get("SNOWFLAKE_PASSWORD").strip()
+        os.environ["SNOWFLAKE_DATABASE"] = Variable.get("SNOWFLAKE_DATABASE").strip()
+        os.environ["SNOWFLAKE_WAREHOUSE"] = Variable.get("SNOWFLAKE_WAREHOUSE").strip()
+        os.environ["SNOWFLAKE_SCHEMA"] = Variable.get("SNOWFLAKE_SCHEMA").strip()
+        os.environ["SNOWFLAKE_ROLE"] = Variable.get("SNOWFLAKE_ROLE").strip()
+        
         from nhl_pipeline.export.sheets_export import main
         main()
+        
+        # Cleanup temp file
+        os.unlink(creds_path)
 
     export_sheets = PythonOperator(
         task_id="export_to_google_sheets",
