@@ -86,7 +86,6 @@ def query_to_dataframe(conn: snowflake.connector.SnowflakeConnection, query: str
 def get_google_sheets_client() -> gspread.Client:
     """Authenticate with Google Sheets using service account."""
     import json
-    import tempfile
     
     creds_path = os.environ.get("GOOGLE_SHEETS_CREDENTIALS")
     if creds_path:

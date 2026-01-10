@@ -211,7 +211,6 @@ with DAG(
     def export_to_sheets():
         """Export dbt models to Google Sheets."""
         import os
-        import json
         import tempfile
         import boto3
         from airflow.models import Variable
