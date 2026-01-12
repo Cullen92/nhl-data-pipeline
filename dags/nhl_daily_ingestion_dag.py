@@ -6,8 +6,8 @@ import time
 
 from airflow.models import DAG
 from airflow.providers.standard.operators.python import PythonOperator
-from airflow.providers.standard.operators.bash import BashOperator
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+from airflow.providers.dbt.cloud.operators.dbt import DbtCloudRunJobOperator
 from airflow.utils.log.logging_mixin import LoggingMixin
 
 from nhl_pipeline.ingestion.fetch_game_boxscore import (
@@ -164,12 +164,12 @@ with DAG(
                 SELECT 
                     $1:payload,
                     METADATA$FILENAME,
-                    TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'date=(\\d{4}-\\d{2}-\\d{2})', 1, 1, 'e')),
-                    TO_NUMBER(REGEXP_SUBSTR(METADATA$FILENAME, 'game_id=(\\d+)', 1, 1, 'e'))
+                    TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'date=([0-9]{4}-[0-9]{2}-[0-9]{2})', 1, 1, 'e')),
+                    TO_NUMBER(REGEXP_SUBSTR(METADATA$FILENAME, 'game_id=([0-9]+)', 1, 1, 'e'))
                 FROM @NHL.RAW_NHL.NHL_RAW_S3_STAGE/game_boxscore/
             )
             FILE_FORMAT=(TYPE=JSON)
-            PATTERN='.*\\.json$'
+            PATTERN='.*\.json$'
             ON_ERROR='CONTINUE';
         """,
         autocommit=True,
@@ -184,42 +184,65 @@ with DAG(
                 SELECT 
                     $1:payload,
                     METADATA$FILENAME,
-                    TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'date=(\\d{4}-\\d{2}-\\d{2})', 1, 1, 'e')),
-                    TO_NUMBER(REGEXP_SUBSTR(METADATA$FILENAME, 'game_id=(\\d+)', 1, 1, 'e'))
+                    TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'date=([0-9]{4}-[0-9]{2}-[0-9]{2})', 1, 1, 'e')),
+                    TO_NUMBER(REGEXP_SUBSTR(METADATA$FILENAME, 'game_id=([0-9]+)', 1, 1, 'e'))
                 FROM @NHL.RAW_NHL.NHL_RAW_S3_STAGE/game_pbp/
             )
             FILE_FORMAT=(TYPE=JSON)
-            PATTERN='.*\\.json$'
+            PATTERN='.*\.json$'
             ON_ERROR='CONTINUE';
         """,
         autocommit=True,
     )
 
-    # dbt run task - rebuild silver layer models after raw data loads
-    # dbt project is synced to S3 and available in the MWAA environment
-    # We use profiles.yml configured via environment variables
-    run_dbt_models = BashOperator(
+    # dbt Cloud - trigger job and wait for completion
+    # Connection 'dbt_cloud_default' configured in Airflow with Account ID + API Token
+    # Job ID from dbt Cloud after creating the job
+    run_dbt_models = DbtCloudRunJobOperator(
         task_id="run_dbt_models",
-        bash_command="""
-            cd /usr/local/airflow/dags/dbt_nhl && \
-            python3 -m dbt run --profiles-dir . --target prod
-        """,
-        env={
-            "SNOWFLAKE_ACCOUNT": "{{ var.value.SNOWFLAKE_ACCOUNT }}",
-            "SNOWFLAKE_USER": "{{ var.value.SNOWFLAKE_USER }}",
-            "SNOWFLAKE_PASSWORD": "{{ var.value.SNOWFLAKE_PASSWORD }}",
-            "SNOWFLAKE_ROLE": "{{ var.value.SNOWFLAKE_ROLE }}",
-            "SNOWFLAKE_DATABASE": "{{ var.value.SNOWFLAKE_DATABASE }}",
-            "SNOWFLAKE_WAREHOUSE": "{{ var.value.SNOWFLAKE_WAREHOUSE }}",
-        },
+        job_id="{{ var.value.DBT_CLOUD_JOB_ID }}",
+        check_interval=30,  # Poll every 30 seconds
+        timeout=600,  # 10 minute timeout
+        wait_for_termination=True,
     )
 
     # Export to Google Sheets for Tableau Public
     # Runs the sheets_export module which reads from Snowflake and writes to Google Sheets
     def export_to_sheets():
         """Export dbt models to Google Sheets."""
+        import os
+        import tempfile
+        import boto3
+        from airflow.models import Variable
+        
+        # Download Google credentials from S3 (avoids Variable JSON escaping issues)
+        s3 = boto3.client("s3")
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            creds_obj = s3.get_object(
+                Bucket="mwaa-bucket-nhl-cullenm-dev",
+                Key="config/google-sheets-credentials.json"
+            )
+            creds_content = creds_obj["Body"].read().decode("utf-8")
+            f.write(creds_content)
+            creds_path = f.name
+        
+        os.environ["GOOGLE_SHEET_ID"] = Variable.get("GOOGLE_SHEET_ID").strip()
+        os.environ["GOOGLE_SHEETS_CREDENTIALS"] = creds_path
+        
+        # Snowflake credentials
+        os.environ["SNOWFLAKE_ACCOUNT"] = Variable.get("SNOWFLAKE_ACCOUNT").strip()
+        os.environ["SNOWFLAKE_USER"] = Variable.get("SNOWFLAKE_USER").strip()
+        os.environ["SNOWFLAKE_PASSWORD"] = Variable.get("SNOWFLAKE_PASSWORD").strip()
+        os.environ["SNOWFLAKE_DATABASE"] = Variable.get("SNOWFLAKE_DATABASE").strip()
+        os.environ["SNOWFLAKE_WAREHOUSE"] = Variable.get("SNOWFLAKE_WAREHOUSE").strip()
+        os.environ["SNOWFLAKE_SCHEMA"] = Variable.get("SNOWFLAKE_SCHEMA").strip()
+        os.environ["SNOWFLAKE_ROLE"] = Variable.get("SNOWFLAKE_ROLE").strip()
+        
         from nhl_pipeline.export.sheets_export import main
         main()
+        
+        # Cleanup temp file
+        os.unlink(creds_path)
 
     export_sheets = PythonOperator(
         task_id="export_to_google_sheets",

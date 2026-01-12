@@ -85,14 +85,24 @@ def query_to_dataframe(conn: snowflake.connector.SnowflakeConnection, query: str
 
 def get_google_sheets_client() -> gspread.Client:
     """Authenticate with Google Sheets using service account."""
+    import json
+    
     creds_path = os.environ.get("GOOGLE_SHEETS_CREDENTIALS")
     if creds_path:
-        logger.info("Using Google Sheets credentials from GOOGLE_SHEETS_CREDENTIALS: %s", creds_path)
-        return gspread.service_account(filename=creds_path)
+        # Check if it's JSON content (starts with '{') or a file path
+        if creds_path.strip().startswith('{'):
+            # It's JSON content, write to temp file
+            logger.info("Using Google Sheets credentials from JSON content")
+            creds_dict = json.loads(creds_path)
+            return gspread.service_account_from_dict(creds_dict)
+        else:
+            # It's a file path
+            logger.info("Using Google Sheets credentials from file: %s", creds_path)
+            return gspread.service_account(filename=creds_path)
 
     logger.error(
         "GOOGLE_SHEETS_CREDENTIALS is not set. Please set it to the path of your "
-        "service account JSON key file as described in this module's setup steps."
+        "service account JSON key file or the JSON content itself."
     )
     raise RuntimeError(
         "Missing GOOGLE_SHEETS_CREDENTIALS environment variable required for Google "

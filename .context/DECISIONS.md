@@ -516,4 +516,128 @@ See `dbt_nhl/TEAM_SHOTS_README.md` for detailed experiment design and prerequisi
 
 ---
 
+## 2026-01-09: dbt Cloud Migration (MWAA Dependency Conflicts)
+
+**Status:** Accepted
+
+**Context:** Attempted to run dbt directly in MWAA but hit irreconcilable dependency conflicts:
+- dbt-core 1.7.x requires `pathspec<0.12`, but MWAA ships with `pathspec==0.12.1`
+- dbt-core 1.8.x requires `protobuf>=5.0`, but MWAA ships with `protobuf==4.25.8`
+- MWAA's constraint file is immutable - cannot override these versions
+
+**Decision:** Migrate to **dbt Cloud** for dbt execution, using Airflow's `DbtCloudRunJobOperator` to trigger jobs.
+
+**Implementation:**
+- dbt Cloud account connected to GitHub repo (develop branch)
+- Two jobs: "Daily Run" (full `dbt run`) and "Odds Run" (`dbt run --select tag:odds`)
+- Airflow triggers jobs via API and waits for completion
+- Added `apache-airflow-providers-dbt-cloud==4.4.2` to requirements
+
+**Alternatives Considered:**
+- Virtual environment in MWAA startup.sh: Partially worked but dbt-core installation incomplete
+- ECS/Lambda for dbt execution: More infrastructure complexity
+- Downgrade dbt to ancient version: Would miss critical features and bug fixes
+
+**Consequences:**
+- Positive: Industry-standard approach for Airflow + dbt integration
+- Positive: No dependency conflicts - dbt Cloud manages its own environment
+- Positive: Better observability (dbt Cloud dashboard, docs, lineage)
+- Positive: Free tier sufficient for this project
+- Negative: External dependency (dbt Cloud service)
+- Negative: Requires GitHub integration and API token management
+
+---
+
+## 2026-01-09: Google Sheets Credentials via S3 (Not Airflow Variables)
+
+**Status:** Accepted
+
+**Context:** Storing Google service account JSON in Airflow Variables caused issues:
+- JSON escaping/encoding problems when pasted into UI
+- "File name too long" error when gspread tried to use JSON as file path
+- Complex to debug credential format issues
+
+**Decision:** Store Google Sheets credentials JSON file in S3 and download at runtime in the DAG.
+
+**Implementation:**
+```python
+s3 = boto3.client("s3")
+with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+    creds_obj = s3.get_object(Bucket="mwaa-bucket-nhl-cullenm-dev", Key="config/google-sheets-credentials.json")
+    f.write(creds_obj["Body"].read().decode("utf-8"))
+    creds_path = f.name
+os.environ["GOOGLE_SHEETS_CREDENTIALS"] = creds_path
+```
+
+**Alternatives Considered:**
+- AWS Secrets Manager: Preferred but required IAM permissions not available
+- Airflow Variables with JSON content: Escaping issues, hard to debug
+- Base64 encoding: Extra complexity for no benefit
+
+**Consequences:**
+- Positive: Clean separation - credentials stored as proper JSON file
+- Positive: Works reliably with gspread's file-based auth
+- Positive: Easy to update credentials (just upload new file to S3)
+- Negative: Credentials in S3 bucket (acceptable for dev, use Secrets Manager for prod)
+
+---
+
+## 2026-01-09: dbt generate_schema_name Macro
+
+**Status:** Accepted
+
+**Context:** dbt was creating schemas with concatenated names like `STAGING_SILVER_BRONZE` instead of clean names like `STAGING_BRONZE`. This is dbt's default behavior when using custom schema names.
+
+**Decision:** Add `generate_schema_name.sql` macro to override dbt's default schema naming.
+
+**Implementation:**
+```sql
+{% macro generate_schema_name(custom_schema_name, node) -%}
+    {%- if custom_schema_name is none -%}
+        {{ target.schema }}
+    {%- else -%}
+        STAGING_{{ custom_schema_name | upper }}
+    {%- endif -%}
+{%- endmacro %}
+```
+
+**Consequences:**
+- Positive: Clean schema names: STAGING_BRONZE, STAGING_SILVER
+- Positive: Consistent naming pattern across environments
+- Negative: Dropped orphaned schemas manually (STAGING_SILVER_BRONZE, etc.)
+
+---
+
+## 2026-01-09: Snowflake COPY INTO Regex Fix
+
+**Status:** Accepted
+
+**Context:** COPY INTO statements were loading data but `partition_date` was NULL for 5000+ rows. The regex `\\d` in Python strings wasn't being parsed correctly by Snowflake.
+
+**Decision:** Use `[0-9]` character classes instead of `\\d` shorthand in Snowflake regex patterns.
+
+**Before:**
+```sql
+TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'date=(\\d{4}-\\d{2}-\\d{2})', 1, 1, 'e'))
+```
+
+**After:**
+```sql
+TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'date=([0-9]{4}-[0-9]{2}-[0-9]{2})', 1, 1, 'e'))
+```
+
+**Remediation:** Fixed existing NULL partition_dates with UPDATE:
+```sql
+UPDATE NHL.RAW_NHL.GAME_BOXSCORE_SNAPSHOTS
+SET partition_date = TO_DATE(REGEXP_SUBSTR(s3_key, 'date=([0-9]{4}-[0-9]{2}-[0-9]{2})', 1, 1, 'e'))
+WHERE partition_date IS NULL;
+```
+
+**Consequences:**
+- Positive: Future loads correctly parse partition_date
+- Positive: `[0-9]` is more portable across regex engines
+- Lesson: Be cautious with escape sequences in multi-layer string handling (Python → SQL)
+
+---
+
 <!-- Add new decisions above this line -->

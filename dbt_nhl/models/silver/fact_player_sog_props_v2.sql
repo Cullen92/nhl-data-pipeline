@@ -90,6 +90,7 @@ recent_players AS (
 enhanced_crosswalk AS (
     SELECT
         pl.game_date,
+        pl.event_id,
         pl.home_team,
         pl.away_team,
         pl.player_name AS odds_player_name,

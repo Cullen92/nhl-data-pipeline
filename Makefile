@@ -27,7 +27,7 @@ sync-mwaa:
 	@aws s3 sync dags/ s3://$(MWAA_BUCKET)/dags/ --exclude "__pycache__/*" --exclude "*.pyc"
 	@aws s3 sync dbt_nhl/ s3://$(MWAA_BUCKET)/dags/dbt_nhl/ --exclude "target/*" --exclude "logs/*" --exclude "dbt_packages/*" --exclude "__pycache__/*"
 	@aws s3 cp plugins.zip s3://$(MWAA_BUCKET)/plugins.zip
-	@aws s3 cp requirements-mwaa.txt s3://$(MWAA_BUCKET)/requirements.txt
+	@aws s3 cp requirements-mwaa.txt s3://$(MWAA_BUCKET)/requirements/requirements-mwaa.txt
 	@echo "Done! MWAA will pick up changes within a few minutes."
 
 deploy-mwaa: build-plugins sync-mwaa
