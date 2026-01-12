@@ -50,6 +50,7 @@ jobs:
         env:
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PRIVATE_KEY_PATH: /home/runner/.snowflake/rsa_key.p8
+          SNOWFLAKE_ROLE: TRANSFORMER
         run: dbt deps
 
       - name: Generate dbt docs
@@ -57,6 +58,7 @@ jobs:
         env:
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PRIVATE_KEY_PATH: /home/runner/.snowflake/rsa_key.p8
+          SNOWFLAKE_ROLE: TRANSFORMER
         run: dbt docs generate
 
       - name: Prepare docs for GitHub Pages
