@@ -39,7 +39,9 @@ The short-term objective is to generate predictive reports for NHL players, spec
 
 ## Architecture Overview
 ```
-NHL API → Airflow (MWAA) → S3 (Data Lake) → Snowflake (Raw) → dbt (Bronze/Silver/Gold) → Analytics
+NHL API ──┬──→ Airflow (MWAA) → S3 (Data Lake) → Snowflake (Raw) → dbt Cloud → Analytics
+Odds API ─┘                                                              ↓
+                                                                  Google Sheets → Tableau Public
 ```
 
 ## Data Lineage
@@ -50,17 +52,23 @@ NHL API → Airflow (MWAA) → S3 (Data Lake) → Snowflake (Raw) → dbt (Bronz
 flowchart TB
     subgraph Sources["Data Sources"]
         API[NHL API]
+        ODDS[Odds API]
     end
     
     subgraph Ingestion["Ingestion Layer"]
-        AF[Airflow DAGs]
+        AF[Airflow MWAA]
         S3[(S3 Data Lake)]
+    end
+    
+    subgraph Transform["Transformation"]
+        DBT[dbt Cloud]
     end
     
     subgraph Bronze["Bronze Layer"]
         B1[bronze_schedule_snapshots]
         B2[bronze_game_boxscore_snapshots]
         B3[bronze_game_pbp_snapshots]
+        B4[bronze_odds_player_props]
     end
     
     subgraph Silver["Silver Layer"]
@@ -71,16 +79,21 @@ flowchart TB
         F2[fact_player_game_stats]
         F3[fact_shot_events]
         F4[fact_team_game_stats]
+        F5[fact_player_sog_props_v2]
         M1[team_shot_metrics]
-        M2[team_shots_against_by_position]
     end
     
-    API --> AF --> S3 --> B1 & B2 & B3
-    B1 --> D1
-    B2 --> D2 & D3 & F1 & F2 & F4
-    B3 --> F3
-    F4 --> M1
-    F2 --> M2
+    subgraph Output["Analytics"]
+        GS[Google Sheets]
+        TAB[Tableau Public]
+    end
+    
+    API --> AF
+    ODDS --> AF
+    AF --> S3 --> B1 & B2 & B3 & B4
+    B1 & B2 & B3 & B4 --> DBT
+    DBT --> D1 & D2 & D3 & F1 & F2 & F3 & F4 & F5 & M1
+    F5 --> GS --> TAB
 ```
 
 ## Technology Stack
@@ -88,11 +101,11 @@ This project serves as a practical playground for mastering modern data engineer
 
 *   **Languages:** Python, SQL
 *   **Development Environment:** VS Code with WSL (Ubuntu)
-*   **Orchestration:** Apache Airflow
-*   **Cloud Infrastructure:** AWS (S3, IAM)
+*   **Orchestration:** Apache Airflow (AWS MWAA)
+*   **Cloud Infrastructure:** AWS (S3, MWAA, IAM)
 *   **Data Warehousing:** Snowflake
-*   **Transformation:** dbt (Data Build Tool)
-*   **Processing:** PySpark (planned)
+*   **Transformation:** dbt Cloud (triggered via Airflow)
+*   **Data Sources:** NHL API, The Odds API (player props)
 *   **Visualization:** Tableau Public (with Google Sheets auto-refresh)
 
 ## Architecture & Infrastructure
@@ -148,7 +161,8 @@ Built a robust Python-based ingestion module (`src/nhl_pipeline/ingestion`) that
 
 ### 2. Orchestration (Airflow)
 Airflow DAGs have been deployed to automate the workflow:
-*   `nhl_daily_ingestion_dag`: Runs daily to fetch the latest game data.
+*   `nhl_daily_ingestion_dag`: Runs daily to fetch schedule, boxscore, and PBP data → loads to Snowflake → triggers dbt Cloud → exports to Google Sheets.
+*   `nhl_odds_daily_ingestion`: Fetches player prop odds from The Odds API → loads to Snowflake → triggers dbt Cloud odds models.
 *   `nhl_backfill_dag`: Handles historical data loading to populate the warehouse.
 *   `nhl_raw_stats_skater_daily`: Specialized pipeline for daily skater statistics.
 
@@ -159,11 +173,14 @@ Implements a medallion architecture (Bronze → Silver → Gold) for data qualit
     - `bronze_schedule_snapshots`: Daily game schedules
     - `bronze_game_boxscore_snapshots`: Game-level boxscore data
     - `bronze_game_pbp_snapshots`: Play-by-play event data
-    - 10 dbt tests validating critical fields (all passing)
-*   **Silver Layer:** Dimensional model with fact and dimension tables (in progress)
+    - `bronze_odds_player_props`: Player prop betting lines from The Odds API
+    - 10+ dbt tests validating critical fields (all passing)
+*   **Silver Layer:** Dimensional model with fact and dimension tables
     - `dim_date`: Date dimension with NHL season-aware logic
-    - `dim_team`, `dim_player`: Implemented sparse team and player dimensions
-    - `fact_game_results`, `fact_player_game_stats`: Implemented fact tables
+    - `dim_team`, `dim_player`: Sparse team and player dimensions
+    - `fact_game_results`, `fact_player_game_stats`: Core fact tables
+    - `fact_player_sog_props_v2`: Player SOG props with actual vs predicted analysis
+    - Bruins-specific models for team-focused dashboard
 *   **Gold Layer:** Pre-aggregated analytics and ML-ready features (planned)
 
 ## Getting Started
