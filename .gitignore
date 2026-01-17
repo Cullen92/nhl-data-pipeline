@@ -1,6 +1,7 @@
 # Local settings (developer-specific)
 config/settings.yml
 .venv/
+venv/
 
 # Build artifacts
 *.egg-info/
@@ -8,6 +9,10 @@ __pycache__/
 .vscode/
 plugins.zip
 .env
+
+# Streamlit
+streamlit/venv/
+.streamlit/
 
 # dbt artifacts
 dbt_nhl/target/
