@@ -57,7 +57,7 @@ def upload_snapshot_to_s3(snapshot: dict[str, Any], partition_dt: datetime | str
 
     return f"s3://{settings.s3_bucket}/{key}"
 
-# Test run
+# Manual test execution when run as a script
 if __name__ == "__main__":
     snapshot = fetch_schedule()
     uri = upload_snapshot_to_s3(snapshot)
