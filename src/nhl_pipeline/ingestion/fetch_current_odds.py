@@ -18,9 +18,8 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-import requests
-
 from nhl_pipeline.config import get_settings
+from nhl_pipeline.ingestion.api_utils import make_odds_api_request
 from nhl_pipeline.ingestion.s3_utils import put_json_to_s3
 from nhl_pipeline.utils.datetime_utils import utc_now_iso
 
@@ -36,43 +35,6 @@ MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 5
 
 
-def _make_odds_api_request(
-    endpoint: str,
-    params: dict[str, Any],
-    api_key: str,
-) -> tuple[dict[str, Any] | list[Any], dict[str, int]]:
-    """Make a request to The Odds API with retry logic."""
-    params["apiKey"] = api_key
-    url = f"{ODDS_API_BASE}/{endpoint}"
-    
-    for attempt in range(MAX_RETRIES):
-        try:
-            resp = requests.get(url, params=params, timeout=30)
-            
-            if resp.status_code == 429:
-                wait_time = RETRY_DELAY_SECONDS * (attempt + 1)
-                print(f"Rate limited. Waiting {wait_time}s before retry...")
-                time.sleep(wait_time)
-                continue
-            
-            resp.raise_for_status()
-            usage = {
-                "requests_used": int(resp.headers.get("x-requests-used", 0)),
-                "requests_remaining": int(resp.headers.get("x-requests-remaining", 0)),
-                "last_cost": int(resp.headers.get("x-requests-last", 0)),
-            }
-            return resp.json(), usage
-            
-        except requests.exceptions.RequestException as e:
-            if attempt < MAX_RETRIES - 1:
-                print(f"Request failed: {e}. Retrying...")
-                time.sleep(RETRY_DELAY_SECONDS)
-            else:
-                raise
-    
-    raise RuntimeError(f"Failed after {MAX_RETRIES} retries")
-
-
 def fetch_upcoming_events(api_key: str) -> tuple[list[dict], dict]:
     """
     Fetch upcoming NHL events from The Odds API.
@@ -86,10 +48,19 @@ def fetch_upcoming_events(api_key: str) -> tuple[list[dict], dict]:
     endpoint = f"sports/{SPORT_KEY}/events"
     params = {"dateFormat": "iso"}
     
-    data, usage = _make_odds_api_request(endpoint, params, api_key)
+    data, usage = make_odds_api_request(
+        ODDS_API_BASE, endpoint, params, api_key, MAX_RETRIES, RETRY_DELAY_SECONDS
+    )
     events = data if isinstance(data, list) else []
     
-    return events, usage
+    # Convert ApiUsage dataclass to dict for backward compatibility
+    usage_dict = {
+        "requests_used": usage.requests_used,
+        "requests_remaining": usage.requests_remaining,
+        "last_cost": usage.last_cost,
+    }
+    
+    return events, usage_dict
 
 
 def fetch_current_event_odds(
@@ -118,8 +89,18 @@ def fetch_current_event_odds(
         "dateFormat": "iso",
     }
     
-    data, usage = _make_odds_api_request(endpoint, params, api_key)
-    return data, usage
+    data, usage = make_odds_api_request(
+        ODDS_API_BASE, endpoint, params, api_key, MAX_RETRIES, RETRY_DELAY_SECONDS
+    )
+    
+    # Convert ApiUsage dataclass to dict for backward compatibility
+    usage_dict = {
+        "requests_used": usage.requests_used,
+        "requests_remaining": usage.requests_remaining,
+        "last_cost": usage.last_cost,
+    }
+    
+    return data, usage_dict
 
 
 def ingest_upcoming_odds_to_s3(
