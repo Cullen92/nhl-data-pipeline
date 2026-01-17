@@ -94,13 +94,10 @@ def extract_final_game_ids(
         if cutoff_dt is not None:
             start_time_str = game.get("startTimeUTC")
             if start_time_str:
-                try:
-                    game_start_dt = parse_utc_dt(start_time_str)
-                    if game_start_dt < cutoff_dt:
-                        continue
-                except Exception:
-                    # If we can't parse the date, skip the time filter for this game
-                    pass
+                game_start_dt = parse_utc_dt(start_time_str)
+                # parse_utc_dt returns None if parsing fails, in which case we skip the filter
+                if game_start_dt is not None and game_start_dt < cutoff_dt:
+                    continue
             
         selected.append(game_id)
         if len(selected) >= max_games:
