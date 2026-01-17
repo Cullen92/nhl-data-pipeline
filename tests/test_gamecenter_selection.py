@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 
 from nhl_pipeline.ingestion.gamecenter_selection import extract_final_game_ids
 
