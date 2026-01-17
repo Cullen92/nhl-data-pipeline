@@ -91,9 +91,10 @@ def get_settings() -> Settings:
         or data.get("odds_api", {}).get("api_key")
     )
 
-    missing = [name for name, val in [("aws.region", aws_region), ("s3.bucket", s3_bucket)] if not val]
-    if missing:
-        raise ValueError(f"Missing required settings: {missing}. Check config/settings.yml or env vars.")
+    if not aws_region:
+        raise ValueError("Missing required setting: aws.region. Check config/settings.yml or env vars.")
+    if not s3_bucket:
+        raise ValueError("Missing required setting: s3.bucket. Check config/settings.yml or env vars.")
 
     return Settings(
         aws_region=str(aws_region),

@@ -16,7 +16,7 @@ from nhl_pipeline.ingestion.fetch_game_pbp import (
     upload_game_pbp_snapshot_to_s3,
 )
 from nhl_pipeline.ingestion.fetch_schedule import fetch_schedule
-from nhl_pipeline.ingestion.gamecenter_selection import extract_game_ids
+from nhl_pipeline.ingestion.gamecenter_selection import extract_final_game_ids
 from nhl_pipeline.ingestion.s3_utils import put_json_to_s3, s3_key_exists
 from nhl_pipeline.utils.paths import (
     raw_game_boxscore_key,
@@ -106,11 +106,8 @@ with DAG(
             schedule_snapshot = fetch_schedule(url=url)
             payload = schedule_snapshot.get("payload")
 
-            game_ids = extract_game_ids(
+            game_ids = extract_final_game_ids(
                 payload,
-                partition_dt=day,
-                lookback_days=0,
-                only_final=True,
                 max_games=max_games_per_day,
             )
 

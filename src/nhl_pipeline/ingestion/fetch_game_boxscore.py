@@ -1,3 +1,10 @@
+"""
+Fetch NHL game boxscore data from the NHL API.
+
+Retrieves detailed game statistics including player stats, team stats,
+and game outcomes. Uploads the data to S3 for further processing.
+"""
+
 from __future__ import annotations
 
 import json

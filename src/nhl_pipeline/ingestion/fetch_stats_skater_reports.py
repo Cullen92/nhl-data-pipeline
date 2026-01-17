@@ -1,3 +1,18 @@
+"""
+Fetch NHL skater statistics reports from the NHL Stats API.
+
+Provides functions for fetching paginated skater statistics including:
+- Summary stats (goals, assists, points)
+- Time on ice reports 
+- Power play statistics
+
+!**** 
+Currently not used in production pipeline. Reserved for future
+detailed player statistics analysis.
+!****
+
+"""
+
 from __future__ import annotations
 
 import json
@@ -23,7 +38,7 @@ _STATS_BASE = "https://api.nhle.com/stats/rest/en"
 def _stats_url(path: str, params: dict[str, Any]) -> str:
     return f"{_STATS_BASE}/{path}?{urlencode(params)}"
 
-
+# TODO: look to shift toward aggregate stats for grabbing season's worth rather than games
 def fetch_stats_skater_summary(
     *,
     season_id: int,
@@ -41,6 +56,8 @@ def fetch_stats_skater_summary(
         "limit": limit,
         "cayenneExp": f"seasonId={season_id} and gameTypeId={game_type_id}",
     }
+
+    # Example URL: https://api.nhle.com/stats/rest/en/skater/summary?isAggregate=false&isGame=true&start=0&limit=1000&cayenneExp=seasonId%3D20232024%20and%20gameTypeId%3D2
     url = _stats_url("skater/summary", params)
 
     resp = make_api_call(url, timeout=timeout_s)
