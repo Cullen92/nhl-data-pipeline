@@ -37,11 +37,11 @@ def iter_schedule_games(payload: Any) -> list[dict[str, Any]]:
     for day in game_week:
         if not isinstance(day, dict):
             continue
-        #Get games in the day
+        # Get games in the day
         day_games = day.get("games")
         if not isinstance(day_games, list):
             continue
-        #Get individual game
+        # Get individual game
         for g in day_games:
             if isinstance(g, dict):
                 games.append(g)
