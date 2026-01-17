@@ -8,7 +8,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from config import ST_CONFIG, CACHE_TTL
 
