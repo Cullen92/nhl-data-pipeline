@@ -7,10 +7,9 @@ filter by game state (final games only), and handle time windows.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
 from typing import Any
 
-from nhl_pipeline.utils.datetime_utils import parse_airflow_ts, parse_utc_dt
+from nhl_pipeline.utils.datetime_utils import parse_airflow_ts
 
 
 def partition_date_from_ts(ts: str) -> str:
