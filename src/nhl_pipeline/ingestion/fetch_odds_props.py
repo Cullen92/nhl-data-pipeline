@@ -67,7 +67,9 @@ def _parse_usage_headers(headers: dict) -> ApiUsage:
         last_cost=int(headers.get("x-requests-last", 0)),
     )
 
-
+# Given we're beholden to a token amount per month, we need to be careful with requests.
+# Set some retry logic to avoid churning tokens.
+# Update user on total remaining after each request.
 def _make_odds_api_request(
     endpoint: str,
     params: dict[str, Any],

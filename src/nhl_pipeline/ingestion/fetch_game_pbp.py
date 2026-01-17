@@ -1,3 +1,10 @@
+"""
+Fetch NHL game play-by-play data from the NHL API.
+
+Retrieves detailed event-by-event data for games including shots,
+goals, penalties, and other game events with coordinates and timestamps.
+"""
+
 from __future__ import annotations
 
 import json

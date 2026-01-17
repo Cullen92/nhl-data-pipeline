@@ -1,3 +1,10 @@
+"""
+Utilities for making resilient HTTP API calls.
+
+Provides retry logic and error handling for external API requests,
+particularly for the NHL API endpoints.
+"""
+
 import requests
 import logging
 from requests.exceptions import HTTPError, RequestException

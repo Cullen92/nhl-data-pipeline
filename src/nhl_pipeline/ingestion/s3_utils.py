@@ -1,3 +1,10 @@
+"""
+Utilities for uploading data to AWS S3.
+
+Provides functions for uploading JSON data to S3 with proper error handling
+and checking if S3 objects already exist to avoid duplicate uploads.
+"""
+
 from __future__ import annotations
 
 import json
