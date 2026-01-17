@@ -84,7 +84,7 @@ def fetch_upcoming_events(api_key: str) -> tuple[list[dict], dict]:
         Tuple of (list of events, API usage info)
     """
     endpoint = f"sports/{SPORT_KEY}/events"
-    params = {"dateFormat": "iso",}
+    params = {"dateFormat": "iso"}
     
     data, usage = _make_odds_api_request(endpoint, params, api_key)
     events = data if isinstance(data, list) else []
