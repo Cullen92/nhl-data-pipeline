@@ -19,7 +19,7 @@ from nhl_pipeline.ingestion.fetch_game_pbp import (
     upload_game_pbp_snapshot_to_s3,
 )
 from nhl_pipeline.ingestion.fetch_schedule import fetch_schedule, upload_snapshot_to_s3
-from nhl_pipeline.ingestion.gamecenter_selection import extract_game_ids
+from nhl_pipeline.ingestion.gamecenter_selection import extract_final_game_ids
 from nhl_pipeline.utils.datetime_utils import parse_airflow_ts
 
 logger = LoggingMixin().log
@@ -76,19 +76,13 @@ with DAG(
         payload = schedule_snapshot.get("payload")
         prev_payload = prev_schedule_snapshot.get("payload")
             
-        game_ids = extract_game_ids(
+        game_ids = extract_final_game_ids(
             payload,
-            partition_dt=dt,
-            lookback_days=7,
-            only_final=True,
         )
         
         # Also extract from previous week's schedule
-        prev_game_ids = extract_game_ids(
+        prev_game_ids = extract_final_game_ids(
             prev_payload,
-            partition_dt=dt,
-            lookback_days=7,
-            only_final=True,
         )
         
         # Combine and dedupe

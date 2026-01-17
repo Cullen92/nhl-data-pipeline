@@ -14,8 +14,6 @@ dependencies = [
     "pyyaml",
     "pydantic",
     "python-dotenv",
-    # Spark is often provided by the environment (e.g. EMR), but listing here for now
-    "pyspark", 
 ]
 
 [project.optional-dependencies]

@@ -22,13 +22,11 @@ import argparse
 import json
 import logging
 import time
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 
-import requests
-
 from nhl_pipeline.config import get_settings
+from nhl_pipeline.ingestion.api_utils import ApiUsage, make_odds_api_request
 from nhl_pipeline.ingestion.s3_utils import put_json_to_s3, s3_key_exists
 from nhl_pipeline.utils.datetime_utils import utc_now_iso
 from nhl_pipeline.utils.paths import raw_odds_player_props_key, raw_odds_events_key
@@ -49,57 +47,6 @@ DEFAULT_MARKET = "player_shots_on_goal"
 REQUEST_DELAY_SECONDS = 0.5  # Be nice to the API
 MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 5
-
-
-@dataclass
-class ApiUsage:
-    """Track API credit usage."""
-    requests_used: int = 0
-    requests_remaining: int = 0
-    last_cost: int = 0
-
-
-def _parse_usage_headers(headers: dict) -> ApiUsage:
-    """Extract usage info from response headers."""
-    return ApiUsage(
-        requests_used=int(headers.get("x-requests-used", 0)),
-        requests_remaining=int(headers.get("x-requests-remaining", 0)),
-        last_cost=int(headers.get("x-requests-last", 0)),
-    )
-
-
-def _make_odds_api_request(
-    endpoint: str,
-    params: dict[str, Any],
-    api_key: str,
-) -> tuple[dict[str, Any] | list[Any], ApiUsage]:
-    """Make a request to The Odds API with retry logic."""
-    params["apiKey"] = api_key
-    url = f"{ODDS_API_BASE}/{endpoint}"
-    
-    for attempt in range(MAX_RETRIES):
-        try:
-            resp = requests.get(url, params=params, timeout=30)
-            
-            if resp.status_code == 429:
-                # Rate limited - wait and retry
-                wait_time = RETRY_DELAY_SECONDS * (attempt + 1)
-                logger.warning(f"Rate limited. Waiting {wait_time}s before retry...")
-                time.sleep(wait_time)
-                continue
-            
-            resp.raise_for_status()
-            usage = _parse_usage_headers(resp.headers)
-            return resp.json(), usage
-            
-        except requests.exceptions.RequestException as e:
-            if attempt < MAX_RETRIES - 1:
-                logger.warning(f"Request failed: {e}. Retrying...")
-                time.sleep(RETRY_DELAY_SECONDS)
-            else:
-                raise
-    
-    raise RuntimeError(f"Failed after {MAX_RETRIES} retries")
 
 
 def fetch_historical_events(
@@ -125,7 +72,9 @@ def fetch_historical_events(
         "dateFormat": "iso",
     }
     
-    data, usage = _make_odds_api_request(endpoint, params, api_key)
+    data, usage = make_odds_api_request(
+        ODDS_API_BASE, endpoint, params, api_key, MAX_RETRIES, RETRY_DELAY_SECONDS
+    )
     
     # Response is wrapped: {"timestamp": ..., "data": [...events...]}
     if isinstance(data, dict) and "data" in data:
@@ -168,7 +117,9 @@ def fetch_historical_event_props(
         "dateFormat": "iso",
     }
     
-    data, usage = _make_odds_api_request(endpoint, params, api_key)
+    data, usage = make_odds_api_request(
+        ODDS_API_BASE, endpoint, params, api_key, MAX_RETRIES, RETRY_DELAY_SECONDS
+    )
     
     # Response is wrapped: {"timestamp": ..., "data": {...event...}}
     if isinstance(data, dict) and "data" in data:
