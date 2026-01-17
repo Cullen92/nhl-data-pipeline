@@ -108,9 +108,6 @@ with DAG(
 
             game_ids = extract_final_game_ids(
                 payload,
-                partition_dt=day,
-                lookback_days=0,
-                only_final=True,
                 max_games=max_games_per_day,
             )
 

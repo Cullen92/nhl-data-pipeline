@@ -78,17 +78,11 @@ with DAG(
             
         game_ids = extract_final_game_ids(
             payload,
-            partition_dt=dt,
-            lookback_days=7,
-            only_final=True,
         )
         
         # Also extract from previous week's schedule
         prev_game_ids = extract_final_game_ids(
             prev_payload,
-            partition_dt=dt,
-            lookback_days=7,
-            only_final=True,
         )
         
         # Combine and dedupe
