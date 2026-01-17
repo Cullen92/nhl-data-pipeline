@@ -38,7 +38,7 @@ _STATS_BASE = "https://api.nhle.com/stats/rest/en"
 def _stats_url(path: str, params: dict[str, Any]) -> str:
     return f"{_STATS_BASE}/{path}?{urlencode(params)}"
 
-# TODO: look to shift toward aggregate stats for grabing season's worth rather than games
+# TODO: look to shift toward aggregate stats for grabbing season's worth rather than games
 def fetch_stats_skater_summary(
     *,
     season_id: int,
