@@ -24,6 +24,14 @@ class ApiUsage:
     requests_used: int = 0
     requests_remaining: int = 0
     last_cost: int = 0
+    
+    def to_dict(self) -> dict[str, int]:
+        """Convert to dictionary format for backward compatibility."""
+        return {
+            "requests_used": self.requests_used,
+            "requests_remaining": self.requests_remaining,
+            "last_cost": self.last_cost,
+        }
 
 
 def make_api_call(url, headers=None, retries=3, timeout=30):

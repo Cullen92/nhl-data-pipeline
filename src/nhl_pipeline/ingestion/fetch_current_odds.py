@@ -53,14 +53,7 @@ def fetch_upcoming_events(api_key: str) -> tuple[list[dict], dict]:
     )
     events = data if isinstance(data, list) else []
     
-    # Convert ApiUsage dataclass to dict for backward compatibility
-    usage_dict = {
-        "requests_used": usage.requests_used,
-        "requests_remaining": usage.requests_remaining,
-        "last_cost": usage.last_cost,
-    }
-    
-    return events, usage_dict
+    return events, usage.to_dict()
 
 
 def fetch_current_event_odds(
@@ -93,14 +86,7 @@ def fetch_current_event_odds(
         ODDS_API_BASE, endpoint, params, api_key, MAX_RETRIES, RETRY_DELAY_SECONDS
     )
     
-    # Convert ApiUsage dataclass to dict for backward compatibility
-    usage_dict = {
-        "requests_used": usage.requests_used,
-        "requests_remaining": usage.requests_remaining,
-        "last_cost": usage.last_cost,
-    }
-    
-    return data, usage_dict
+    return data, usage.to_dict()
 
 
 def ingest_upcoming_odds_to_s3(
