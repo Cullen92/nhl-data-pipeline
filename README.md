@@ -39,9 +39,13 @@ The short-term objective is to generate predictive reports for NHL players, spec
 
 ## Architecture Overview
 ```
-NHL API ──┬──→ Airflow (MWAA) → S3 (Data Lake) → Snowflake (Raw) → dbt Cloud → Analytics
-Odds API ─┘                                                              ↓
-                                                                  Google Sheets → Tableau Public
+NHL API ──┬──→ Airflow (MWAA) → S3 (Data Lake) ─┬─→ Snowflake (Raw) → dbt Cloud → Analytics
+Odds API ─┘                                     │                          ↓
+                                                │                   Google Sheets → Tableau Public
+                                                │
+                                                └─→ Iceberg (Bronze/Silver/Gold) → DuckDB/Athena → Streamlit
+                                                         ↑
+                                                    AWS Glue Catalog
 ```
 
 ## Data Lineage
@@ -102,11 +106,13 @@ This project serves as a practical playground for mastering modern data engineer
 *   **Languages:** Python, SQL
 *   **Development Environment:** VS Code with WSL (Ubuntu)
 *   **Orchestration:** Apache Airflow (AWS MWAA)
-*   **Cloud Infrastructure:** AWS (S3, MWAA, IAM)
+*   **Cloud Infrastructure:** AWS (S3, MWAA, IAM, Glue Data Catalog)
 *   **Data Warehousing:** Snowflake
-*   **Transformation:** dbt Cloud (triggered via Airflow)
+*   **Lakehouse:** Apache Iceberg (PyIceberg + AWS Glue Catalog)
+*   **Transformation:** dbt Cloud (Snowflake), PyIceberg (Iceberg)
+*   **Query Engines:** Snowflake, DuckDB, AWS Athena
 *   **Data Sources:** NHL API, The Odds API (player props)
-*   **Visualization:** Tableau Public (with Google Sheets auto-refresh)
+*   **Visualization:** Tableau Public, Streamlit
 
 ## Architecture & Infrastructure
 
@@ -114,7 +120,26 @@ This project serves as a practical playground for mastering modern data engineer
 The project leverages AWS for scalable storage and security:
 *   **MWAA (Managed Workflows for Apache Airflow):** Used for hosting the Airflow environment in the cloud.
 *   **S3:** Acts as the Data Lake, storing raw JSON responses from the NHL API (Schedule, Boxscores, Play-by-Play, Skater Reports).
+*   **Glue Data Catalog:** Metadata store for Apache Iceberg tables, enabling multi-engine query access.
 *   **IAM:** Granular Identity and Access Management roles are being implemented to secure services, though some components currently use broader permissions during the development phase.
+
+### Iceberg Lakehouse Layer
+The project implements an open lakehouse architecture using Apache Iceberg:
+
+```
+S3 raw/nhl/... (JSON) → PyIceberg → S3 iceberg/bronze/... (Parquet)
+                                          ↓
+                                   S3 iceberg/silver/...
+                                          ↓
+                                   S3 iceberg/gold/...
+```
+
+*   **Table Format:** Apache Iceberg for ACID transactions, time travel, and schema evolution
+*   **Catalog:** AWS Glue Data Catalog for metadata management
+*   **Medallion Architecture:** Bronze (raw), Silver (cleaned), Gold (aggregated)
+*   **Query Engines:** DuckDB (local), Athena (serverless SQL), Spark (batch)
+
+See [Iceberg Lakehouse Decision](.context/DECISIONS.md#2026-01-17-adopt-apache-iceberg-for-lakehouse-architecture) for detailed rationale.
 
 ### Environment Strategy
 *   **Current State:** The project is currently operating in a **Development** environment.
