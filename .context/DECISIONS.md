@@ -640,4 +640,55 @@ WHERE partition_date IS NULL;
 
 ---
 
+## 2026-01-17: Adopt Apache Iceberg for Lakehouse Architecture
+
+**Status:** Accepted
+
+**Context:** The current pipeline uses S3 for raw JSON storage and Snowflake for transformation. While this works, it has limitations:
+1. Vendor lock-in to Snowflake for compute
+2. Cost scaling as data volume grows
+3. Limited learning of open-source lakehouse patterns used by Netflix, Apple, Stripe, etc.
+
+**Decision:** Adopt Apache Iceberg as the table format for a parallel lakehouse layer alongside Snowflake.
+
+| Component | Choice | Rationale |
+|-----------|--------|-----------|
+| Table Format | Apache Iceberg | Industry standard, multi-engine support |
+| Catalog | AWS Glue Data Catalog | Native AWS, no additional infra |
+| Storage | AWS S3 (existing bucket) | Already in use |
+| Write Engine | PyIceberg | Simple Python integration |
+| Read Engines | DuckDB, Athena | Flexibility for different use cases |
+
+**Alternatives Considered:**
+- Delta Lake: More tied to Databricks ecosystem
+- Apache Hudi: More complex, better for streaming-heavy workloads
+- Nessie Catalog: Added complexity; Glue simpler for AWS
+- MinIO: Unnecessary since we already have S3
+
+**Architecture:**
+```
+S3 raw/nhl/... (JSON) → PyIceberg → S3 iceberg/bronze/... (Parquet)
+                                          ↓
+                                   S3 iceberg/silver/...
+                                          ↓
+                                   S3 iceberg/gold/...
+```
+
+**Consequences:**
+- Positive: Learn industry-standard lakehouse patterns
+- Positive: Multi-engine flexibility (DuckDB, Athena, Spark)
+- Positive: Open format — data is portable
+- Negative: Additional complexity (two paths for data)
+- Negative: Glue Catalog requires IAM permissions
+
+**Implementation:**
+- ✅ Install PyIceberg with Glue support
+- ✅ Create `bronze` namespace in Glue
+- ✅ Create `bronze.game_boxscore` table
+- 🔲 Load historical boxscore data to bronze
+- 🔲 Create silver layer transformations
+- 🔲 Connect Streamlit to Iceberg via DuckDB
+
+---
+
 <!-- Add new decisions above this line -->

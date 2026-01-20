@@ -1,0 +1,321 @@
+# NHL API: Game Boxscore
+# Endpoint: https://api-web.nhle.com/v1/gamecenter/{game_id}/boxscore
+# Description: Complete game data including scores, player stats, and game state
+
+name: Game Boxscore
+endpoint: /v1/gamecenter/{game_id}/boxscore
+base_url: https://api-web.nhle.com
+description: |
+  Returns complete boxscore data for a single game including team scores,
+  player statistics broken down by position, and game state information.
+
+# Top-level fields
+fields:
+  id:
+    type: int
+    description: NHL game ID (e.g., 2024020001)
+    example: 2024020001
+    
+  season:
+    type: int
+    description: Season ID in YYYYYYYY format
+    example: 20242025
+    
+  gameType:
+    type: int
+    description: |
+      Game type indicator:
+      1 = Preseason
+      2 = Regular Season
+      3 = Playoffs
+      4 = All-Star
+    example: 2
+    
+  gameDate:
+    type: string
+    format: date
+    description: Game date (YYYY-MM-DD)
+    example: "2024-10-08"
+    
+  gameState:
+    type: string
+    description: |
+      Current game state:
+      FUT = Future (not started)
+      LIVE = In progress
+      FINAL = Completed
+      OFF = Final (older games)
+    example: "FINAL"
+    
+  gameScheduleState:
+    type: string
+    description: Schedule state (OK, PPD for postponed)
+    example: "OK"
+    
+  startTimeUTC:
+    type: string
+    format: datetime
+    description: Scheduled start time in UTC
+    example: "2024-10-08T23:00:00Z"
+
+  venue:
+    type: object
+    fields:
+      default:
+        type: string
+        description: Venue name
+        example: "TD Garden"
+
+  venueLocation:
+    type: object
+    fields:
+      default:
+        type: string
+        description: City name
+        example: "Boston"
+
+# Team objects
+  homeTeam:
+    type: object
+    description: Home team data
+    fields:
+      id:
+        type: int
+        description: Team ID
+        example: 6
+      abbrev:
+        type: string
+        description: 3-letter team code
+        example: "BOS"
+      commonName:
+        type: object
+        fields:
+          default:
+            type: string
+            example: "Bruins"
+      placeName:
+        type: object
+        fields:
+          default:
+            type: string
+            example: "Boston"
+      score:
+        type: int
+        description: Goals scored
+        example: 4
+      sog:
+        type: int
+        description: Shots on goal
+        example: 32
+      logo:
+        type: string
+        description: URL to team logo (light version)
+      darkLogo:
+        type: string
+        description: URL to team logo (dark version)
+
+  awayTeam:
+    type: object
+    description: Away team data (same structure as homeTeam)
+    see: homeTeam
+
+# Period info
+  periodDescriptor:
+    type: object
+    fields:
+      number:
+        type: int
+        description: Current/final period number
+        example: 3
+      periodType:
+        type: string
+        description: REG, OT, SO (shootout)
+        example: "REG"
+      maxRegulationPeriods:
+        type: int
+        description: Always 3 for NHL
+        example: 3
+
+  regPeriods:
+    type: int
+    description: Number of regulation periods (always 3)
+    example: 3
+
+# Clock
+  clock:
+    type: object
+    fields:
+      timeRemaining:
+        type: string
+        description: Time left in period (MM:SS)
+        example: "00:00"
+      secondsRemaining:
+        type: int
+        example: 0
+      running:
+        type: bool
+        description: Is clock running
+        example: false
+      inIntermission:
+        type: bool
+        example: false
+
+# Player Stats - the main data
+  playerByGameStats:
+    type: object
+    description: Player statistics grouped by team and position
+    fields:
+      homeTeam:
+        type: object
+        fields:
+          forwards:
+            type: array
+            items: PlayerStats
+          defense:
+            type: array
+            items: PlayerStats
+          goalies:
+            type: array
+            items: GoalieStats
+      awayTeam:
+        type: object
+        description: Same structure as homeTeam
+        see: homeTeam
+
+# Nested type definitions
+nested_types:
+  PlayerStats:
+    description: Skater (forward/defense) game statistics
+    fields:
+      playerId:
+        type: int
+        description: Unique player ID
+        example: 8479318
+      sweaterNumber:
+        type: int
+        description: Jersey number
+        example: 88
+      name:
+        type: object
+        fields:
+          default:
+            type: string
+            description: Player name
+            example: "David Pastrnak"
+      position:
+        type: string
+        description: Position code (C, L, R, D)
+        example: "R"
+      goals:
+        type: int
+        example: 1
+      assists:
+        type: int
+        example: 2
+      points:
+        type: int
+        description: goals + assists
+        example: 3
+      plusMinus:
+        type: int
+        description: Plus/minus rating for the game
+        example: 2
+      pim:
+        type: int
+        description: Penalty minutes
+        example: 0
+      hits:
+        type: int
+        example: 3
+      powerPlayGoals:
+        type: int
+        example: 0
+      sog:
+        type: int
+        description: Shots on goal
+        example: 5
+      faceoffWinningPctg:
+        type: float
+        description: Faceoff win percentage (0.0-1.0)
+        example: 0.667
+      toi:
+        type: string
+        description: Time on ice (MM:SS format)
+        example: "18:42"
+      blockedShots:
+        type: int
+        example: 1
+      shifts:
+        type: int
+        description: Number of shifts played
+        example: 22
+      giveaways:
+        type: int
+        example: 1
+      takeaways:
+        type: int
+        example: 2
+
+  GoalieStats:
+    description: Goaltender game statistics
+    fields:
+      playerId:
+        type: int
+        example: 8479496
+      sweaterNumber:
+        type: int
+        example: 1
+      name:
+        type: object
+        fields:
+          default:
+            type: string
+            example: "Jeremy Swayman"
+      position:
+        type: string
+        description: Always "G"
+        example: "G"
+      evenStrengthShotsAgainst:
+        type: string
+        description: Format "saves-shots" at even strength
+        example: "18-20"
+      powerPlayShotsAgainst:
+        type: string
+        description: Format "saves-shots" on power play
+        example: "3-3"
+      shorthandedShotsAgainst:
+        type: string
+        description: Format "saves-shots" shorthanded
+        example: "0-0"
+      savePctg:
+        type: float
+        description: Save percentage (0.0-1.0)
+        example: 0.913
+      evenStrengthGoalsAgainst:
+        type: int
+        example: 2
+      powerPlayGoalsAgainst:
+        type: int
+        example: 0
+      shorthandedGoalsAgainst:
+        type: int
+        example: 0
+      pim:
+        type: int
+        description: Penalty minutes
+        example: 0
+      goalsAgainst:
+        type: int
+        example: 2
+      toi:
+        type: string
+        description: Time on ice (MM:SS)
+        example: "60:00"
+
+# Notes for silver layer transformations
+silver_layer_notes:
+  - "Parse toi (time on ice) from 'MM:SS' string to integer seconds"
+  - "faceoffWinningPctg is already decimal, no conversion needed"
+  - "Consider flattening playerByGameStats into fact_player_game_stats"
+  - "homeTeam/awayTeam.score -> use for fact_game_results"
+  - "shots against format 'saves-shots' needs parsing for goalie stats"
