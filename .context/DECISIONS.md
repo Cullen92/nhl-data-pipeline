@@ -691,4 +691,50 @@ S3 raw/nhl/... (JSON) → PyIceberg → S3 iceberg/bronze/... (Parquet)
 
 ---
 
+## 2026-02-01: PyIceberg for Bronze, PySpark for Silver/Gold
+
+**Status:** Accepted
+
+**Context:** Implementing the Iceberg lakehouse architecture and needed to choose between:
+1. Using PySpark throughout the entire pipeline (bronze, silver, gold)
+2. Using PyIceberg for simple bronze ingestion, PySpark for complex transformations
+
+Primary learning goal is to gain deep PySpark experience for data engineering roles.
+
+**Decision:** Use **PyIceberg for bronze layer** (raw data ingestion), **PySpark for silver/gold layers** (complex transformations).
+
+**Rationale:**
+
+*Bronze Layer (PyIceberg):*
+- Simple operation: Read JSON from S3 → Write Parquet to Iceberg
+- No complex transformations (just schema enforcement)
+- No distributed processing needed (2K files, ~1GB data)
+- Lower overhead: No Spark cluster required
+- PyIceberg 0.10.0 supports partitioned writes
+
+*Silver/Gold Layers (PySpark):*
+- Complex transformations: JSON parsing, joins, window functions, aggregations
+- Learning objective: Master PySpark DataFrames, SQL, optimization
+- Distributed processing for large-scale data (future-proofing)
+- Consistent with industry practices (Spark for ELT)
+
+**Alternatives Considered:**
+- **PySpark everywhere:** More learning opportunities but overkill for simple bronze ingestion. Requires Spark setup even for trivial operations.
+- **PyIceberg everywhere:** Simpler but doesn't meet learning objectives. Limited transformation capabilities.
+
+**Consequences:**
+- Positive: Right tool for the job — simple operations stay simple
+- Positive: Focus PySpark learning on complex transformations where it shines
+- Positive: Less infrastructure overhead for bronze layer
+- Positive: Bronze scripts run locally without Spark cluster
+- Negative: Two different tools to maintain (PyIceberg + PySpark)
+- Negative: Slightly less PySpark practice overall
+
+**Implementation:**
+- Bronze: `iceberg/bronze_game_boxscore.py` uses PyIceberg (completed)
+- Silver: `spark/silver_player_game_stats.py` will use PySpark (next phase)
+- Gold: `spark/gold_player_rolling_stats.py` will use PySpark (Phase 3)
+
+---
+
 <!-- Add new decisions above this line -->

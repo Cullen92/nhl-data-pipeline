@@ -1,20 +1,21 @@
 """
-Bronze Layer: Game Boxscore Snapshots
+Bronze Layer: Player Prop Odds Snapshots
 
-Reads raw JSON snapshots from S3 (raw/nhl/game_boxscore/...)
+Reads raw odds JSON snapshots from S3 (raw/odds/player_props/...)
 and writes them to Iceberg bronze layer with minimal transformation.
 
 Schema:
-- game_id: LONG (required) - NHL game ID (10 digits, needs int64)
+- event_id: STRING (required) - Unique identifier for the odds event
+- game_date: DATE (required) - Date of the game
+- market: STRING (required) - Market type (e.g., "player_shots_on_goal")
 - extracted_at: TIMESTAMP - When we fetched from the API
 - source_url: STRING - API URL we fetched from
 - payload: STRING - Full JSON payload as string
 - partition_date: STRING - Date partition (YYYY-MM-DD)
 
-Improvements from POC:
-- Uses int64 for game_id (NHL IDs are 10 digits)
-- Partitioned by partition_date for query performance
-- Incremental loading (skips already loaded games)
+Features:
+- Partitioned by partition_date and market for query performance
+- Incremental loading (skips already loaded events)
 - Config loaded from config/iceberg.yml
 - Detailed logging and error handling
 """
@@ -22,7 +23,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, date
 from pathlib import Path
 from typing import Optional
 
@@ -34,7 +35,7 @@ from pyiceberg.exceptions import NoSuchTableError
 from pyiceberg.partitioning import PartitionField, PartitionSpec
 from pyiceberg.schema import Schema
 from pyiceberg.transforms import IdentityTransform
-from pyiceberg.types import LongType, NestedField, StringType, TimestampType
+from pyiceberg.types import DateType, NestedField, StringType, TimestampType
 
 # =============================================================================
 # LOGGING SETUP
@@ -95,30 +96,39 @@ def ensure_namespace(catalog, namespace: str = "bronze"):
 # SCHEMA DEFINITION
 # =============================================================================
 
-# Iceberg schema for bronze game boxscore
-# NOTE: Using LongType (int64) instead of IntegerType (int32) for game_id
-# NHL game IDs are 10 digits (e.g., 2024020001), which can overflow int32
-BOXSCORE_SCHEMA = Schema(
-    NestedField(1, "game_id", LongType(), required=True),
-    NestedField(2, "extracted_at", TimestampType(), required=True),
-    NestedField(3, "source_url", StringType()),
-    NestedField(4, "payload", StringType()),  # Raw JSON as string
-    NestedField(5, "partition_date", StringType(), required=True),
+# Iceberg schema for bronze odds player props
+ODDS_SCHEMA = Schema(
+    NestedField(1, "event_id", StringType(), required=True),
+    NestedField(2, "game_date", DateType(), required=True),
+    NestedField(3, "market", StringType(), required=True),
+    NestedField(4, "extracted_at", TimestampType(), required=True),
+    NestedField(5, "source_url", StringType()),
+    NestedField(6, "payload", StringType()),  # Raw JSON as string
+    NestedField(7, "partition_date", StringType(), required=True),
 )
 
-# Partition specification: partition by partition_date
-BOXSCORE_PARTITION_SPEC = PartitionSpec(
+# Partition specification: partition by partition_date and market
+# This allows efficient queries like "get all player_shots_on_goal props for 2024-01-15"
+ODDS_PARTITION_SPEC = PartitionSpec(
     PartitionField(
-        source_id=5,  # Field ID for partition_date
+        source_id=7,  # Field ID for partition_date
         field_id=1000,
         transform=IdentityTransform(),
         name="partition_date"
+    ),
+    PartitionField(
+        source_id=3,  # Field ID for market
+        field_id=1001,
+        transform=IdentityTransform(),
+        name="market"
     )
 )
 
 # Matching PyArrow schema (for writing)
-BOXSCORE_ARROW_SCHEMA = pa.schema([
-    pa.field("game_id", pa.int64(), nullable=False),
+ODDS_ARROW_SCHEMA = pa.schema([
+    pa.field("event_id", pa.string(), nullable=False),
+    pa.field("game_date", pa.date32(), nullable=False),
+    pa.field("market", pa.string(), nullable=False),
     pa.field("extracted_at", pa.timestamp("us"), nullable=False),
     pa.field("source_url", pa.string()),
     pa.field("payload", pa.string()),
@@ -126,7 +136,7 @@ BOXSCORE_ARROW_SCHEMA = pa.schema([
 ])
 
 
-def get_or_create_table(catalog, table_name: str = "bronze.game_boxscore"):
+def get_or_create_table(catalog, table_name: str = "bronze.odds_player_props"):
     """Get existing table or create it with proper partitioning."""
     try:
         table = catalog.load_table(table_name)
@@ -136,14 +146,14 @@ def get_or_create_table(catalog, table_name: str = "bronze.game_boxscore"):
         logger.info(f"Creating new table: '{table_name}'")
         table = catalog.create_table(
             table_name,
-            schema=BOXSCORE_SCHEMA,
-            partition_spec=BOXSCORE_PARTITION_SPEC,
+            schema=ODDS_SCHEMA,
+            partition_spec=ODDS_PARTITION_SPEC,
             properties={
                 "write.parquet.compression-codec": "snappy",
                 "commit.retry.num-retries": "3",
             }
         )
-        logger.info(f"Created Iceberg table: '{table_name}' with partition_date partitioning")
+        logger.info(f"Created Iceberg table: '{table_name}' with partition_date + market partitioning")
         return table
 
 
@@ -151,12 +161,12 @@ def get_or_create_table(catalog, table_name: str = "bronze.game_boxscore"):
 # S3 DATA LOADING
 # =============================================================================
 
-def list_raw_boxscore_files(
+def list_raw_odds_files(
     bucket: str,
-    prefix: str = "raw/nhl/game_boxscore/",
+    prefix: str = "raw/odds/player_props/",
     region: str = "us-east-2"
 ) -> list[str]:
-    """List all raw boxscore JSON files in S3."""
+    """List all raw odds JSON files in S3."""
     s3 = boto3.client("s3", region_name=region)
     keys = []
 
@@ -166,7 +176,7 @@ def list_raw_boxscore_files(
             if obj["Key"].endswith(".json"):
                 keys.append(obj["Key"])
 
-    logger.info(f"Found {len(keys)} raw boxscore files in S3")
+    logger.info(f"Found {len(keys)} raw odds files in S3")
     return keys
 
 
@@ -186,22 +196,26 @@ def read_raw_json_from_s3(bucket: str, key: str, region: str = "us-east-2") -> d
 
 def parse_snapshot_to_row(snapshot: dict, s3_key: str) -> dict:
     """
-    Convert a raw snapshot dict to a bronze table row.
+    Convert a raw odds snapshot dict to a bronze table row.
 
     Input (from your ingestion):
     {
         "extracted_at": "2024-10-08T12:00:00Z",
-        "source_url": "https://api-web.nhle.com/v1/gamecenter/2024020001/boxscore",
-        "game_id": 2024020001,
+        "source_url": "https://api.the-odds-api.com/...",
+        "event_id": "abc123xyz",
+        "game_date": "2024-10-08",
+        "market": "player_shots_on_goal",
         "payload": { ... full API response ... }
     }
 
     Output (for Iceberg):
     {
-        "game_id": 2024020001,
+        "event_id": "abc123xyz",
+        "game_date": date(2024, 10, 8),
+        "market": "player_shots_on_goal",
         "extracted_at": datetime(...),
         "source_url": "...",
-        "payload": '{"id": 2024020001, ...}',  # JSON string
+        "payload": '{"id": "abc123", ...}',  # JSON string
         "partition_date": "2024-10-08"
     }
     """
@@ -209,11 +223,17 @@ def parse_snapshot_to_row(snapshot: dict, s3_key: str) -> dict:
     extracted_at_str = snapshot.get("extracted_at", "")
     extracted_at = datetime.fromisoformat(extracted_at_str.replace("Z", "+00:00"))
 
-    # Extract partition_date from the S3 key (e.g., "raw/nhl/.../date=2024-10-08/...")
-    partition_date = extract_date_from_key(s3_key)
+    # Parse game_date string to date object
+    game_date_str = snapshot.get("game_date", "")
+    game_date = date.fromisoformat(game_date_str) if game_date_str else None
+
+    # Extract partition_date from the S3 key or use game_date
+    partition_date = extract_date_from_key(s3_key) or game_date_str
 
     return {
-        "game_id": snapshot["game_id"],
+        "event_id": snapshot["event_id"],
+        "game_date": game_date,
+        "market": snapshot.get("market", "unknown"),
         "extracted_at": extracted_at,
         "source_url": snapshot.get("source_url", ""),
         "payload": json.dumps(snapshot.get("payload", {})),
@@ -222,37 +242,36 @@ def parse_snapshot_to_row(snapshot: dict, s3_key: str) -> dict:
 
 
 def extract_date_from_key(s3_key: str) -> str:
-    """Extract date from S3 key like 'raw/nhl/.../date=2024-10-08/...'"""
+    """Extract date from S3 key like 'raw/odds/.../date=2024-10-08/...'"""
     for part in s3_key.split("/"):
         if part.startswith("date="):
             return part.replace("date=", "")
-    logger.warning(f"Could not extract date from S3 key: {s3_key}")
-    return "unknown"
+    return ""
 
 
 # =============================================================================
 # INCREMENTAL LOADING
 # =============================================================================
 
-def get_existing_game_ids(table) -> set[int]:
+def get_existing_event_ids(table) -> set[str]:
     """
-    Query the Iceberg table to get all game_ids already loaded.
-    This enables incremental loading - we skip games we've already processed.
+    Query the Iceberg table to get all event_ids already loaded.
+    This enables incremental loading - we skip events we've already processed.
     """
     try:
-        # Scan the table and collect game_ids
-        scan = table.scan(selected_fields=("game_id",))
+        # Scan the table and collect event_ids
+        scan = table.scan(selected_fields=("event_id",))
 
         existing_ids = set()
         for task in scan.plan_files():
             # Read the data file
             arrow_table = task.file.to_arrow()
-            existing_ids.update(arrow_table["game_id"].to_pylist())
+            existing_ids.update(arrow_table["event_id"].to_pylist())
 
-        logger.info(f"Found {len(existing_ids)} existing game_ids in table")
+        logger.info(f"Found {len(existing_ids)} existing event_ids in table")
         return existing_ids
     except Exception as e:
-        logger.warning(f"Could not read existing game_ids: {e}")
+        logger.warning(f"Could not read existing event_ids: {e}")
         return set()
 
 
@@ -260,34 +279,34 @@ def get_existing_game_ids(table) -> set[int]:
 # MAIN EXECUTION
 # =============================================================================
 
-def load_boxscores_to_iceberg(
+def load_odds_to_iceberg(
     config: dict,
     limit: Optional[int] = None,
     skip_existing: bool = True
 ):
     """
-    Main function: Read raw boxscores from S3 and write to Iceberg.
+    Main function: Read raw odds from S3 and write to Iceberg.
 
     Args:
         config: Configuration dictionary from iceberg.yml
         limit: Optional limit on number of files to process (for testing)
-        skip_existing: If True, skip games already in the table (incremental mode)
+        skip_existing: If True, skip events already in the table (incremental mode)
     """
     # Setup
     catalog = get_catalog(config)
     ensure_namespace(catalog, "bronze")
     table = get_or_create_table(catalog)
 
-    # Get existing game_ids for incremental loading
-    existing_game_ids = get_existing_game_ids(table) if skip_existing else set()
+    # Get existing event_ids for incremental loading
+    existing_event_ids = get_existing_event_ids(table) if skip_existing else set()
 
     # List raw files
     bucket = config["aws"]["bucket"]
     region = config["aws"]["region"]
-    raw_data_path = config["raw_data"]["game_boxscore"]
+    raw_data_path = config["raw_data"]["odds_player_props"]
     prefix = raw_data_path.replace(f"s3://{bucket}/", "")
 
-    keys = list_raw_boxscore_files(bucket, prefix, region)
+    keys = list_raw_odds_files(bucket, prefix, region)
     if limit:
         logger.info(f"Limiting to first {limit} files for testing")
         keys = keys[:limit]
@@ -300,10 +319,10 @@ def load_boxscores_to_iceberg(
     for i, key in enumerate(keys):
         try:
             snapshot = read_raw_json_from_s3(bucket, key, region)
-            game_id = snapshot.get("game_id")
+            event_id = snapshot.get("event_id")
 
             # Skip if already loaded
-            if skip_existing and game_id in existing_game_ids:
+            if skip_existing and event_id in existing_event_ids:
                 skipped += 1
                 continue
 
@@ -330,12 +349,14 @@ def load_boxscores_to_iceberg(
     # Convert to PyArrow table
     try:
         arrow_table = pa.table({
-            "game_id": pa.array([r["game_id"] for r in rows], type=pa.int64()),
+            "event_id": [r["event_id"] for r in rows],
+            "game_date": pa.array([r["game_date"] for r in rows], type=pa.date32()),
+            "market": [r["market"] for r in rows],
             "extracted_at": pa.array([r["extracted_at"] for r in rows], type=pa.timestamp("us")),
             "source_url": [r["source_url"] for r in rows],
             "payload": [r["payload"] for r in rows],
             "partition_date": [r["partition_date"] for r in rows],
-        }, schema=BOXSCORE_ARROW_SCHEMA)
+        }, schema=ODDS_ARROW_SCHEMA)
     except pa.ArrowInvalid as e:
         logger.error(f"Failed to create Arrow table: {e}")
         raise
@@ -343,7 +364,7 @@ def load_boxscores_to_iceberg(
     # Write to Iceberg
     try:
         table.append(arrow_table)
-        logger.info(f"Successfully wrote {len(rows)} rows to bronze.game_boxscore")
+        logger.info(f"Successfully wrote {len(rows)} rows to bronze.odds_player_props")
     except Exception as e:
         logger.error(f"Failed to write to Iceberg: {e}")
         raise
@@ -354,7 +375,7 @@ def load_boxscores_to_iceberg(
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Load NHL boxscores to Iceberg bronze layer")
+    parser = argparse.ArgumentParser(description="Load player prop odds to Iceberg bronze layer")
     parser.add_argument("--limit", type=int, default=None, help="Limit number of files to process")
     parser.add_argument("--config", type=str, default="config/iceberg.yml", help="Path to config file")
     parser.add_argument("--no-skip-existing", action="store_true", help="Disable incremental loading")
@@ -365,10 +386,10 @@ if __name__ == "__main__":
     config = load_config(args.config)
 
     # Run
-    rows_loaded = load_boxscores_to_iceberg(
+    rows_loaded = load_odds_to_iceberg(
         config=config,
         limit=args.limit,
         skip_existing=not args.no_skip_existing
     )
 
-    logger.info(f"Done! Loaded {rows_loaded} new game boxscores")
+    logger.info(f"Done! Loaded {rows_loaded} new odds records")

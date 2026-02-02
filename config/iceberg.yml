@@ -1,0 +1,52 @@
+# Iceberg Configuration
+# Central configuration for all Iceberg-related operations
+
+catalog:
+  type: glue
+  region: us-east-2
+  warehouse: s3://nhl-data-pipeline-cullenm-dev/iceberg
+  database: bronze  # Default database for bronze layer
+
+aws:
+  region: us-east-2
+  bucket: nhl-data-pipeline-cullenm-dev
+  # Credentials will be sourced from AWS CLI/environment variables
+
+# S3 paths for raw data sources
+raw_data:
+  game_boxscore: s3://nhl-data-pipeline-cullenm-dev/raw/nhl/game_boxscore
+  game_pbp: s3://nhl-data-pipeline-cullenm-dev/raw/nhl/game_pbp
+  odds_player_props: s3://nhl-data-pipeline-cullenm-dev/raw/odds/player_props
+  schedule: s3://nhl-data-pipeline-cullenm-dev/raw/nhl/schedule
+
+# Iceberg table configurations
+tables:
+  bronze:
+    game_boxscore:
+      partition_spec:
+        - field: partition_date
+          transform: identity
+      properties:
+        write.parquet.compression-codec: snappy
+        commit.retry.num-retries: 3
+
+    odds_player_props:
+      partition_spec:
+        - field: partition_date
+          transform: identity
+        - field: market
+          transform: identity
+      properties:
+        write.parquet.compression-codec: snappy
+        commit.retry.num-retries: 3
+
+# Incremental load tracking
+# Stores metadata about last successful load
+state:
+  s3_path: s3://nhl-data-pipeline-cullenm-dev/iceberg/_state
+  local_path: .iceberg_state
+
+# Logging
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
