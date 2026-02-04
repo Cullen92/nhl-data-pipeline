@@ -99,7 +99,7 @@ def ensure_namespace(catalog, namespace: str = "bronze"):
 # Iceberg schema for bronze odds player props
 ODDS_SCHEMA = Schema(
     NestedField(1, "event_id", StringType(), required=True),
-    NestedField(2, "game_date", DateType(), required=True),
+    NestedField(2, "game_date", DateType(), required=False),  # Nullable for futures/non-game markets
     NestedField(3, "market", StringType(), required=True),
     NestedField(4, "extracted_at", TimestampType(), required=True),
     NestedField(5, "source_url", StringType()),
@@ -127,7 +127,7 @@ ODDS_PARTITION_SPEC = PartitionSpec(
 # Matching PyArrow schema (for writing)
 ODDS_ARROW_SCHEMA = pa.schema([
     pa.field("event_id", pa.string(), nullable=False),
-    pa.field("game_date", pa.date32(), nullable=False),
+    pa.field("game_date", pa.date32(), nullable=True),  # Nullable for futures/non-game markets
     pa.field("market", pa.string(), nullable=False),
     pa.field("extracted_at", pa.timestamp("us"), nullable=False),
     pa.field("source_url", pa.string()),
