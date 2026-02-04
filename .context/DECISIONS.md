@@ -737,4 +737,67 @@ Primary learning goal is to gain deep PySpark experience for data engineering ro
 
 ---
 
+## 2026-02-03: Iceberg Bronze Layer Design Patterns (Phase 1 Complete)
+
+**Status:** Accepted
+
+**Context:** Completed Phase 1 of Iceberg migration: loaded 2,141 game boxscore snapshots and 2,483 odds snapshots to bronze layer. Discovered several important patterns and design decisions during implementation and validation.
+
+**Decision:** Established the following design patterns for Iceberg bronze layer:
+
+1. **Temporal Snapshots are Intentional Duplicates**
+   - Bronze layer preserves ALL snapshots of a game/event over time
+   - Example: A game appears 3 times (scheduled → in-progress → final)
+   - This is CORRECT behavior for bronze (immutable landing zone)
+   - Silver layer will deduplicate using `QUALIFY ROW_NUMBER() ... ORDER BY extracted_at DESC`
+
+2. **Nullable Fields for Optional Business Data**
+   - Made `game_date` nullable in `odds_player_props` (23.68% nulls observed)
+   - Nulls represent futures markets and non-game-specific props
+   - Bronze should accept data as-is, not enforce business rules
+   - Silver layer will filter/handle nulls based on business logic
+
+3. **PyIceberg 0.10.0 Required for Partitioned Writes**
+   - Earlier versions (0.6.0) don't support `table.append()` on partitioned tables
+   - Always use latest stable PyIceberg for new projects
+   - Partitioning strategy: `partition_date` (identity transform) for time-based queries
+
+4. **Validation via PyIceberg + DuckDB**
+   - PyIceberg loads table → Arrow → DuckDB queries for analytics
+   - Validates: row counts, date ranges, duplicates, null percentages
+   - Script: `query/validate_bronze.py` (run after any load)
+
+5. **LongType (int64) for NHL Game IDs**
+   - NHL game IDs are 10-digit integers (e.g., 2025020726)
+   - Requires `LongType()` (int64) not `IntegerType()` (int32)
+   - Schema mismatch between int32/int64 requires table recreation
+
+**Alternatives Considered:**
+- **Deduplicate in bronze:** Rejected. Bronze is immutable landing zone, deduplication is a transformation.
+- **Non-nullable game_date:** Rejected. Would fail for futures markets, not representative of source data.
+- **DuckDB direct Iceberg scan:** Rejected. Requires Glue catalog metadata file paths, PyIceberg integration is simpler.
+
+**Consequences:**
+- Positive: Clear separation of concerns (bronze = raw, silver = transformed)
+- Positive: Temporal data preserved for time-travel queries and debugging
+- Positive: Validation script provides confidence in data loads
+- Positive: Patterns documented for future bronze tables (pbp, schedule)
+- Negative: Higher storage costs (multiple snapshots per game)
+- Negative: Requires clear documentation to prevent confusion about "duplicates"
+
+**Validation Results (2026-02-03):**
+```
+bronze.game_boxscore:      2,141 rows (1,269 unique games, 146 temporal snapshots)
+bronze.odds_player_props:  2,483 rows (74 temporal snapshots, 588 null game_dates)
+Date range:                2024-10-04 to 2026-01-17
+Markets:                   player_shots_on_goal (100%)
+```
+
+**Implementation:**
+- Bronze scripts: `iceberg/bronze_game_boxscore.py`, `iceberg/bronze_odds_player_props.py`
+- Validation: `query/validate_bronze.py`
+- Config: `config/iceberg.yml`
+
+---
+
 <!-- Add new decisions above this line -->
