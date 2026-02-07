@@ -15,4 +15,16 @@ dbt-snowflake
 gspread
 gspread-dataframe
 pandas
+
+# Iceberg and lakehouse dependencies
+pyiceberg[glue,s3fs]==0.10.0
+pyarrow>=14.0.0
+
+# DuckDB for local analytics
+duckdb>=0.10.0
+
+# Streamlit for dashboards
+streamlit>=1.28.0
+plotly>=5.17.0
+
 -e .
