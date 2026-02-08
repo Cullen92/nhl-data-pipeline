@@ -161,7 +161,7 @@ def main():
             ROUND(100.0 * SUM(CASE WHEN game_date IS NULL THEN 1 ELSE 0 END) / COUNT(*), 2) as null_percentage
         FROM df_odds
     """).fetchone()
-    print(f"\nGame date null check:")
+    print("\nGame date null check:")
     print(f"  Total records: {result[0]:,}")
     print(f"  Null game_dates: {result[1]:,} ({result[2]}%)")
 
