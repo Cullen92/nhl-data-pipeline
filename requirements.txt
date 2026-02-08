@@ -1,49 +1,29 @@
-# Core dependencies
-requests
-pydantic
-python-dotenv
-pyyaml
-pandas
+# ==============================================================================
+# NHL Data Pipeline - Local Development Dependencies
+# ==============================================================================
+# This file installs all dependencies needed for local Iceberg development.
+# Dependencies are organized in pyproject.toml using optional dependency groups.
+#
+# For CI/CD: Only install dev tools with `pip install -e ".[dev]"`
+# For local development: Install everything with `pip install -e ".[all]"`
+#
+# Dependency groups defined in pyproject.toml:
+# - [project.dependencies]: Core dependencies (requests, pydantic, pandas, etc.)
+# - [dev]: Development tools (ruff, pytest, mypy)
+# - [iceberg]: Lakehouse dependencies (pyiceberg, duckdb, boto3, pyarrow)
+# - [viz]: Visualization tools (streamlit, plotly)
+# - [all]: All of the above
+# ==============================================================================
 
-# Development tools
-ruff
-pytest
-mypy
-
-# AWS/S3 access
-boto3
-
-# Iceberg and lakehouse dependencies
-pyiceberg[glue,s3fs]==0.10.0
-pyarrow>=14.0.0
-
-# DuckDB for local analytics
-duckdb>=0.10.0
-
-# Streamlit for dashboards
-streamlit>=1.28.0
-plotly>=5.17.0
-
-# Local package in editable mode
--e .
+# Install local package with all optional dependencies for full local development
+-e .[all]
 
 # ==============================================================================
-# Legacy Snowflake/Airflow Dependencies (commented out - managed by AWS MWAA)
+# Legacy Snowflake/Airflow Dependencies
 # ==============================================================================
-# These dependencies are for the legacy Snowflake data path running on AWS MWAA.
-# They are NOT needed for the Iceberg-based implementation.
-# MWAA has its own requirements file: requirements-mwaa.txt
+# These are managed separately in requirements-mwaa.txt for AWS MWAA deployment.
+# They are NOT compatible with Iceberg dependencies due to boto library conflicts.
 #
-# Legacy Snowflake/dbt dependencies:
-# snowflake-connector-python
-# dbt-snowflake
-# gspread
-# gspread-dataframe
-#
-# Legacy Airflow dependencies:
-# apache-airflow==3.0.6
-# apache-airflow-providers-common-sql
-# apache-airflow-providers-snowflake
-#
-# Other removed dependencies:
-# pyspark (not actively used in current implementation)
+# Legacy stack: apache-airflow, snowflake-connector-python, dbt-snowflake
+# See .github/workflows-legacy/ for disabled Snowflake/MWAA workflows
+# ==============================================================================
