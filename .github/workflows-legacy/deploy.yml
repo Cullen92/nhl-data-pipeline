@@ -1,3 +1,14 @@
+# ============================================================================
+# LEGACY WORKFLOW - DISABLED
+# ============================================================================
+# This workflow is preserved for reference but is NOT executed by GitHub Actions.
+# Workflows must be in .github/workflows/ to run; this is in workflows-legacy/.
+#
+# Purpose: Deploy DAGs, plugins, and dbt project to AWS MWAA
+# Disabled: 2026-02 - Project migrated from Airflow orchestration
+# Replacement: Direct execution of ingestion scripts + potential future orchestration
+# ============================================================================
+
 name: Deploy to MWAA
 
 on:

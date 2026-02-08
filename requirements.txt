@@ -1,20 +1,17 @@
+# Core dependencies
 requests
-ruff
-pytest
-boto3
-pyspark
 pydantic
 python-dotenv
-mypy
 pyyaml
-apache-airflow==3.0.6
-apache-airflow-providers-common-sql
-apache-airflow-providers-snowflake
-snowflake-connector-python
-dbt-snowflake
-gspread
-gspread-dataframe
 pandas
+
+# Development tools
+ruff
+pytest
+mypy
+
+# AWS/S3 access
+boto3
 
 # Iceberg and lakehouse dependencies
 pyiceberg[glue,s3fs]==0.10.0
@@ -27,4 +24,26 @@ duckdb>=0.10.0
 streamlit>=1.28.0
 plotly>=5.17.0
 
+# Local package in editable mode
 -e .
+
+# ==============================================================================
+# Legacy Snowflake/Airflow Dependencies (commented out - managed by AWS MWAA)
+# ==============================================================================
+# These dependencies are for the legacy Snowflake data path running on AWS MWAA.
+# They are NOT needed for the Iceberg-based implementation.
+# MWAA has its own requirements file: requirements-mwaa.txt
+#
+# Legacy Snowflake/dbt dependencies:
+# snowflake-connector-python
+# dbt-snowflake
+# gspread
+# gspread-dataframe
+#
+# Legacy Airflow dependencies:
+# apache-airflow==3.0.6
+# apache-airflow-providers-common-sql
+# apache-airflow-providers-snowflake
+#
+# Other removed dependencies:
+# pyspark (not actively used in current implementation)
