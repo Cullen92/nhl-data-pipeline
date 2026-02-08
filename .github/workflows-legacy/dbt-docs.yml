@@ -1,3 +1,14 @@
+# ============================================================================
+# LEGACY WORKFLOW - DISABLED
+# ============================================================================
+# This workflow is preserved for reference but is NOT executed by GitHub Actions.
+# Workflows must be in .github/workflows/ to run; this is in workflows-legacy/.
+#
+# Purpose: Generate and deploy dbt documentation to GitHub Pages
+# Disabled: 2026-02 - Project migrated from dbt (Snowflake) to Iceberg transformations
+# Replacement: TBD - Iceberg transformation documentation approach
+# ============================================================================
+
 name: Deploy dbt Docs to GitHub Pages
 
 on:

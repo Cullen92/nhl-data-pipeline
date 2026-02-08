@@ -1,3 +1,14 @@
+# ============================================================================
+# LEGACY WORKFLOW - DISABLED
+# ============================================================================
+# This workflow is preserved for reference but is NOT executed by GitHub Actions.
+# Workflows must be in .github/workflows/ to run; this is in workflows-legacy/.
+#
+# Purpose: Snowflake Time Travel data quality validation
+# Disabled: 2026-02 - Project migrated from Snowflake to Apache Iceberg
+# Replacement: TBD - Iceberg-native validation approach
+# ============================================================================
+
 name: Data Quality Validation
 
 on:
