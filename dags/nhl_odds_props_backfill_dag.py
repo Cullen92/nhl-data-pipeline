@@ -27,10 +27,10 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+import boto3
+import requests
 from airflow.models import DAG, Variable
 from airflow.providers.standard.operators.python import PythonOperator
-
-import requests
 
 from nhl_pipeline.config import get_settings
 from nhl_pipeline.ingestion.s3_utils import put_json_to_s3, s3_key_exists
@@ -249,21 +249,22 @@ with DAG(
         total_skipped = 0
         total_dates = 0
         credits_remaining = 0
-        
+
+        # Create S3 client once for reuse across all operations (performance optimization)
+        s3_client = boto3.client("s3", region_name=settings.aws_region)
+
         day = start_dt
         while day <= end_dt:
             day_str = day.strftime("%Y-%m-%d")
             print(f"\nProcessing date: {day_str}")
-            
+
             # Check/fetch events for this date
             events_key = raw_odds_events_key(day_str)
-            
-            if skip_existing and s3_key_exists(bucket=bucket, key=events_key):
+
+            if skip_existing and s3_key_exists(bucket=bucket, key=events_key, s3_client=s3_client):
                 # Load existing events list from S3
                 print("  Events list exists, loading from S3...")
-                import boto3
-                s3 = boto3.client("s3", region_name=settings.aws_region)
-                obj = s3.get_object(Bucket=bucket, Key=events_key)
+                obj = s3_client.get_object(Bucket=bucket, Key=events_key)
                 events_data = json.loads(obj["Body"].read().decode("utf-8"))
                 events = events_data.get("events", [])
             else:
@@ -277,7 +278,7 @@ with DAG(
                     "game_date": day_str,
                     "events": events,
                 }
-                put_json_to_s3(bucket=bucket, key=events_key, payload=events_payload)
+                put_json_to_s3(bucket=bucket, key=events_key, payload=events_payload, s3_client=s3_client)
                 print(f"  Found {len(events)} events for {day_str}")
                 time.sleep(REQUEST_DELAY_SECONDS)
             
@@ -298,8 +299,8 @@ with DAG(
                     continue
                 
                 props_key = raw_odds_player_props_key(day_str, event_id, market)
-                
-                if skip_existing and s3_key_exists(bucket=bucket, key=props_key):
+
+                if skip_existing and s3_key_exists(bucket=bucket, key=props_key, s3_client=s3_client):
                     print(f"    Skipping {away_team} @ {home_team} (exists)")
                     total_skipped += 1
                     continue
@@ -319,8 +320,8 @@ with DAG(
                         "away_team": away_team,
                         "data": props_data,
                     }
-                    
-                    put_json_to_s3(bucket=bucket, key=props_key, payload=payload)
+
+                    put_json_to_s3(bucket=bucket, key=props_key, payload=payload, s3_client=s3_client)
                     total_events += 1
                     
                     print(f"    ✓ {away_team} @ {home_team} (credits: {credits_remaining:,})")
