@@ -194,18 +194,23 @@ def main():
     for row in results:
         print(f"  event_id={row[0]}, game_date={row[1]}, market={row[2]}, partition={row[3]}, payload_size={row[4]:,} bytes")
 
+    # Get unique ID counts for summary
+    unique_games = con.execute("SELECT COUNT(DISTINCT game_id) FROM df_boxscore").fetchone()[0]
+    unique_events = con.execute("SELECT COUNT(DISTINCT event_id) FROM df_odds").fetchone()[0]
+
     print("\n" + "=" * 80)
     print("VALIDATION SUMMARY")
     print("=" * 80)
     print("✓ bronze.game_boxscore: Successfully queried")
-    print(f"  - Expected: 2131 games | Actual: {len(df_boxscore):,} rows")
+    print(f"  - Total snapshots: {len(df_boxscore):,} rows ({unique_games:,} unique games)")
     print("✓ bronze.odds_player_props: Successfully queried")
-    print(f"  - Expected: 2483 odds snapshots | Actual: {len(df_odds):,} rows")
+    print(f"  - Total snapshots: {len(df_odds):,} rows ({unique_events:,} unique events)")
 
-    # Final validation
+    # Final validation - Note: Temporal snapshots (duplicates by ID) are expected in bronze
     if len(df_boxscore) == 2131 and len(df_odds) == 2483:
         print("\n✓ ALL VALIDATIONS PASSED!")
-        print("  All expected records are present with no duplicates.")
+        print("  All expected temporal snapshots are present.")
+        print("  (Duplicates by game_id/event_id are correct - bronze layer keeps all snapshots)")
     else:
         print("\n⚠ WARNING: Row counts don't match expectations!")
         print("  Review the metrics above and check S3 for missing/extra files.")
