@@ -640,4 +640,164 @@ WHERE partition_date IS NULL;
 
 ---
 
+## 2026-01-17: Adopt Apache Iceberg for Lakehouse Architecture
+
+**Status:** Accepted
+
+**Context:** The current pipeline uses S3 for raw JSON storage and Snowflake for transformation. While this works, it has limitations:
+1. Vendor lock-in to Snowflake for compute
+2. Cost scaling as data volume grows
+3. Limited learning of open-source lakehouse patterns used by Netflix, Apple, Stripe, etc.
+
+**Decision:** Adopt Apache Iceberg as the table format for a parallel lakehouse layer alongside Snowflake.
+
+| Component | Choice | Rationale |
+|-----------|--------|-----------|
+| Table Format | Apache Iceberg | Industry standard, multi-engine support |
+| Catalog | AWS Glue Data Catalog | Native AWS, no additional infra |
+| Storage | AWS S3 (existing bucket) | Already in use |
+| Write Engine | PyIceberg | Simple Python integration |
+| Read Engines | DuckDB, Athena | Flexibility for different use cases |
+
+**Alternatives Considered:**
+- Delta Lake: More tied to Databricks ecosystem
+- Apache Hudi: More complex, better for streaming-heavy workloads
+- Nessie Catalog: Added complexity; Glue simpler for AWS
+- MinIO: Unnecessary since we already have S3
+
+**Architecture:**
+```
+S3 raw/nhl/... (JSON) → PyIceberg → S3 iceberg/bronze/... (Parquet)
+                                          ↓
+                                   S3 iceberg/silver/...
+                                          ↓
+                                   S3 iceberg/gold/...
+```
+
+**Consequences:**
+- Positive: Learn industry-standard lakehouse patterns
+- Positive: Multi-engine flexibility (DuckDB, Athena, Spark)
+- Positive: Open format — data is portable
+- Negative: Additional complexity (two paths for data)
+- Negative: Glue Catalog requires IAM permissions
+
+**Implementation:**
+- ✅ Install PyIceberg with Glue support
+- ✅ Create `bronze` namespace in Glue
+- ✅ Create `bronze.game_boxscore` table
+- 🔲 Load historical boxscore data to bronze
+- 🔲 Create silver layer transformations
+- 🔲 Connect Streamlit to Iceberg via DuckDB
+
+---
+
+## 2026-02-01: PyIceberg for Bronze, PySpark for Silver/Gold
+
+**Status:** Accepted
+
+**Context:** Implementing the Iceberg lakehouse architecture and needed to choose between:
+1. Using PySpark throughout the entire pipeline (bronze, silver, gold)
+2. Using PyIceberg for simple bronze ingestion, PySpark for complex transformations
+
+Primary learning goal is to gain deep PySpark experience for data engineering roles.
+
+**Decision:** Use **PyIceberg for bronze layer** (raw data ingestion), **PySpark for silver/gold layers** (complex transformations).
+
+**Rationale:**
+
+*Bronze Layer (PyIceberg):*
+- Simple operation: Read JSON from S3 → Write Parquet to Iceberg
+- No complex transformations (just schema enforcement)
+- No distributed processing needed (2K files, ~1GB data)
+- Lower overhead: No Spark cluster required
+- PyIceberg 0.10.0 supports partitioned writes
+
+*Silver/Gold Layers (PySpark):*
+- Complex transformations: JSON parsing, joins, window functions, aggregations
+- Learning objective: Master PySpark DataFrames, SQL, optimization
+- Distributed processing for large-scale data (future-proofing)
+- Consistent with industry practices (Spark for ELT)
+
+**Alternatives Considered:**
+- **PySpark everywhere:** More learning opportunities but overkill for simple bronze ingestion. Requires Spark setup even for trivial operations.
+- **PyIceberg everywhere:** Simpler but doesn't meet learning objectives. Limited transformation capabilities.
+
+**Consequences:**
+- Positive: Right tool for the job — simple operations stay simple
+- Positive: Focus PySpark learning on complex transformations where it shines
+- Positive: Less infrastructure overhead for bronze layer
+- Positive: Bronze scripts run locally without Spark cluster
+- Negative: Two different tools to maintain (PyIceberg + PySpark)
+- Negative: Slightly less PySpark practice overall
+
+**Implementation:**
+- Bronze: `iceberg/bronze_game_boxscore.py` uses PyIceberg (completed)
+- Silver: `spark/silver_player_game_stats.py` will use PySpark (next phase)
+- Gold: `spark/gold_player_rolling_stats.py` will use PySpark (Phase 3)
+
+---
+
+## 2026-02-03: Iceberg Bronze Layer Design Patterns (Phase 1 Complete)
+
+**Status:** Accepted
+
+**Context:** Completed Phase 1 of Iceberg migration: loaded 2,141 game boxscore snapshots and 2,483 odds snapshots to bronze layer. Discovered several important patterns and design decisions during implementation and validation.
+
+**Decision:** Established the following design patterns for Iceberg bronze layer:
+
+1. **Temporal Snapshots are Intentional Duplicates**
+   - Bronze layer preserves ALL snapshots of a game/event over time
+   - Example: A game appears 3 times (scheduled → in-progress → final)
+   - This is CORRECT behavior for bronze (immutable landing zone)
+   - Silver layer will deduplicate using `QUALIFY ROW_NUMBER() ... ORDER BY extracted_at DESC`
+
+2. **Nullable Fields for Optional Business Data**
+   - Made `game_date` nullable in `odds_player_props` (23.68% nulls observed)
+   - Nulls represent futures markets and non-game-specific props
+   - Bronze should accept data as-is, not enforce business rules
+   - Silver layer will filter/handle nulls based on business logic
+
+3. **PyIceberg 0.10.0 Required for Partitioned Writes**
+   - Earlier versions (0.6.0) don't support `table.append()` on partitioned tables
+   - Always use latest stable PyIceberg for new projects
+   - Partitioning strategy: `partition_date` (identity transform) for time-based queries
+
+4. **Validation via PyIceberg + DuckDB**
+   - PyIceberg loads table → Arrow → DuckDB queries for analytics
+   - Validates: row counts, date ranges, duplicates, null percentages
+   - Script: `query/validate_bronze.py` (run after any load)
+
+5. **LongType (int64) for NHL Game IDs**
+   - NHL game IDs are 10-digit integers (e.g., 2025020726)
+   - Requires `LongType()` (int64) not `IntegerType()` (int32)
+   - Schema mismatch between int32/int64 requires table recreation
+
+**Alternatives Considered:**
+- **Deduplicate in bronze:** Rejected. Bronze is immutable landing zone, deduplication is a transformation.
+- **Non-nullable game_date:** Rejected. Would fail for futures markets, not representative of source data.
+- **DuckDB direct Iceberg scan:** Rejected. Requires Glue catalog metadata file paths, PyIceberg integration is simpler.
+
+**Consequences:**
+- Positive: Clear separation of concerns (bronze = raw, silver = transformed)
+- Positive: Temporal data preserved for time-travel queries and debugging
+- Positive: Validation script provides confidence in data loads
+- Positive: Patterns documented for future bronze tables (pbp, schedule)
+- Negative: Higher storage costs (multiple snapshots per game)
+- Negative: Requires clear documentation to prevent confusion about "duplicates"
+
+**Validation Results (2026-02-03):**
+```
+bronze.game_boxscore:      2,141 rows (1,269 unique games, 146 temporal snapshots)
+bronze.odds_player_props:  2,483 rows (74 temporal snapshots, 588 null game_dates)
+Date range:                2024-10-04 to 2026-01-17
+Markets:                   player_shots_on_goal (100%)
+```
+
+**Implementation:**
+- Bronze scripts: `iceberg/bronze_game_boxscore.py`, `iceberg/bronze_odds_player_props.py`
+- Validation: `query/validate_bronze.py`
+- Config: `config/iceberg.yml`
+
+---
+
 <!-- Add new decisions above this line -->

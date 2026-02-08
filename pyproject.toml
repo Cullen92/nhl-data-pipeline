@@ -7,23 +7,41 @@ name = "nhl_pipeline"
 version = "0.1.0"
 description = "NHL Data Pipeline Library"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
+    # Core dependencies needed for all use cases
     "requests",
-    "boto3",
-    "pyyaml",
     "pydantic",
     "python-dotenv",
+    "pyyaml",
+    "pandas",
 ]
 
 [project.optional-dependencies]
+# Development tools (linting, testing, type checking)
 dev = [
     "pytest",
     "ruff",
     "mypy",
-    # Airflow is provided by MWAA, so we list it as a dev dependency for local testing
-    "apache-airflow==3.0.6",
-    "apache-airflow-providers-common-sql",
+]
+
+# Iceberg lakehouse dependencies
+iceberg = [
+    "boto3",
+    "pyiceberg[glue,s3fs]==0.10.0",
+    "pyarrow>=14.0.0",
+    "duckdb>=0.10.0",
+]
+
+# Visualization and dashboards
+viz = [
+    "streamlit>=1.28.0",
+    "plotly>=5.17.0",
+]
+
+# All local development dependencies
+all = [
+    "nhl_pipeline[dev,iceberg,viz]",
 ]
 
 [tool.setuptools.packages.find]
