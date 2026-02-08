@@ -4,6 +4,7 @@ import os
 import time
 from datetime import datetime, timedelta, timezone
 
+import boto3
 from airflow.models import DAG, Variable
 from airflow.providers.standard.operators.python import PythonOperator
 
@@ -90,13 +91,16 @@ with DAG(
         )
         sleep_s = float(os.getenv("NHL_BACKFILL_SLEEP_S", "0"))
 
+        # Create S3 client once for reuse across all operations (performance optimization)
+        s3_client = boto3.client("s3", region_name=settings.aws_region)
+
         day = start_dt
         total_games = 0
         while day <= end_dt:
             day_str = day.strftime("%Y-%m-%d")
 
             success_key = raw_meta_backfill_gamecenter_success_key(day_str)
-            if not force and s3_key_exists(bucket=settings.s3_bucket, key=success_key):
+            if not force and s3_key_exists(bucket=settings.s3_bucket, key=success_key, s3_client=s3_client):
                 print(f"{day_str}: _SUCCESS exists; skipping")
                 day += timedelta(days=1)
                 continue
@@ -120,7 +124,7 @@ with DAG(
                 box_key = raw_game_boxscore_key(day_str, hour, game_id)
                 pbp_key = raw_game_pbp_key(day_str, hour, game_id)
 
-                if skip_existing_game_files and s3_key_exists(bucket=settings.s3_bucket, key=box_key):
+                if skip_existing_game_files and s3_key_exists(bucket=settings.s3_bucket, key=box_key, s3_client=s3_client):
                     print(f"Skip existing boxscore: game_id={game_id}")
                 else:
                     box = fetch_game_boxscore(game_id)
@@ -129,7 +133,7 @@ with DAG(
                     )
                     print(f"Uploaded boxscore: game_id={game_id} -> {box_uri}")
 
-                if skip_existing_game_files and s3_key_exists(bucket=settings.s3_bucket, key=pbp_key):
+                if skip_existing_game_files and s3_key_exists(bucket=settings.s3_bucket, key=pbp_key, s3_client=s3_client):
                     print(f"Skip existing play-by-play: game_id={game_id}")
                 else:
                     pbp = fetch_game_play_by_play(game_id)
@@ -158,7 +162,7 @@ with DAG(
                     "started_at": started_at,
                     "completed_at": completed_at,
                 }
-                marker_uri = put_json_to_s3(bucket=settings.s3_bucket, key=success_key, payload=marker)
+                marker_uri = put_json_to_s3(bucket=settings.s3_bucket, key=success_key, payload=marker, s3_client=s3_client)
                 print(f"{day_str}: wrote _SUCCESS marker -> {marker_uri}")
             else:
                 print(f"{day_str}: skipping _SUCCESS marker (no FINAL games found, date is today or future)")

@@ -170,13 +170,22 @@ def list_raw_boxscore_files(
     return keys
 
 
-def read_raw_json_from_s3(bucket: str, key: str, region: str = "us-east-2") -> dict:
-    """Read a single JSON file from S3."""
-    s3 = boto3.client("s3", region_name=region)
+def read_raw_json_from_s3(s3_client, bucket: str, key: str) -> dict:
+    """
+    Read a single JSON file from S3.
+
+    Args:
+        s3_client: Reused boto3 S3 client (for performance in loops)
+        bucket: S3 bucket name
+        key: S3 object key
+
+    Returns:
+        Parsed JSON data as dict
+    """
     try:
-        response = s3.get_object(Bucket=bucket, Key=key)
+        response = s3_client.get_object(Bucket=bucket, Key=key)
         return json.loads(response["Body"].read().decode("utf-8"))
-    except s3.exceptions.NoSuchKey:
+    except s3_client.exceptions.NoSuchKey:
         logger.error(f"S3 key not found: {key}")
         raise
     except json.JSONDecodeError as e:
@@ -222,12 +231,20 @@ def parse_snapshot_to_row(snapshot: dict, s3_key: str) -> dict:
 
 
 def extract_date_from_key(s3_key: str) -> str:
-    """Extract date from S3 key like 'raw/nhl/.../date=2024-10-08/...'"""
+    """
+    Extract date from S3 key like 'raw/nhl/.../date=2024-10-08/...'.
+
+    Raises:
+        ValueError: If date= segment is missing from the S3 key
+    """
     for part in s3_key.split("/"):
         if part.startswith("date="):
             return part.replace("date=", "")
-    logger.warning(f"Could not extract date from S3 key: {s3_key}")
-    return "unknown"
+
+    # Fail fast on malformed S3 keys instead of writing garbage partitions
+    error_msg = f"Could not extract date from S3 key (missing 'date=' segment): {s3_key}"
+    logger.error(error_msg)
+    raise ValueError(error_msg)
 
 
 # =============================================================================
@@ -243,11 +260,9 @@ def get_existing_game_ids(table) -> set[int]:
         # Scan the table and collect game_ids
         scan = table.scan(selected_fields=("game_id",))
 
-        existing_ids = set()
-        for task in scan.plan_files():
-            # Read the data file
-            arrow_table = task.file.to_arrow()
-            existing_ids.update(arrow_table["game_id"].to_pylist())
+        # Use the scan API to read directly into an Arrow table
+        arrow_table = scan.to_arrow()
+        existing_ids = set(arrow_table["game_id"].to_pylist())
 
         logger.info(f"Found {len(existing_ids)} existing game_ids in table")
         return existing_ids
@@ -292,6 +307,9 @@ def load_boxscores_to_iceberg(
         logger.info(f"Limiting to first {limit} files for testing")
         keys = keys[:limit]
 
+    # Create S3 client once for reuse across all files (performance optimization)
+    s3_client = boto3.client("s3", region_name=region)
+
     # Read and parse each file
     rows = []
     skipped = 0
@@ -299,7 +317,7 @@ def load_boxscores_to_iceberg(
 
     for i, key in enumerate(keys):
         try:
-            snapshot = read_raw_json_from_s3(bucket, key, region)
+            snapshot = read_raw_json_from_s3(s3_client, bucket, key)
             game_id = snapshot.get("game_id")
 
             # Skip if already loaded
